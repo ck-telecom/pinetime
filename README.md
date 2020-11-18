@@ -7,5 +7,5 @@ zephyr based PineTime, with hardware improvements as nfc, gps, etc.
 ```
 cd pinetime/app
 
-west -b pinetime .
+west build -b pinetime .
 ```
