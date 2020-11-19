@@ -1,0 +1,16 @@
+# Sensor configuration options
+
+# Copyright (c) 2016 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+
+# menu "Sensor drivers"
+
+
+source "bma421/Kconfig"
+
+source "hrs3300/Kconfig"
+
+source "cst816s/Kconfig"
+
+# endmenu
