@@ -20,7 +20,7 @@ int bma421_attr_set(struct device *dev,
 		    enum sensor_attribute attr,
 		    const struct sensor_value *val)
 {
-	struct bma421_data *drv_data = dev->driver_data;
+	struct bma421_data *drv_data = dev->data;
 	u64_t slope_th;
 u8_t buf[BMA421_FEATURE_SIZE];
 //default anymotion is selected 
@@ -62,7 +62,7 @@ static void bma421_gpio_callback(struct device *dev,
 static void bma421_thread_cb(void *arg)
 {
 	struct device *dev = arg;
-	struct bma421_data *drv_data = dev->driver_data;
+	struct bma421_data *drv_data = dev->data;
 	u8_t status = 0U;
 	int err = 0;
 
@@ -97,14 +97,14 @@ static void bma421_thread_cb(void *arg)
 		}*/
 	}
 
-	gpio_pin_enable_callback(drv_data->gpio, CONFIG_BMA421_GPIO_PIN_NUM);
+//	gpio_pin_enable_callback(drv_data->gpio, CONFIG_BMA421_GPIO_PIN_NUM);
 }
 
 #ifdef CONFIG_BMA421_TRIGGER_OWN_THREAD
 static void bma421_thread(int dev_ptr, int unused)
 {
 	struct device *dev = INT_TO_POINTER(dev_ptr);
-	struct bma421_data *drv_data = dev->driver_data;
+	struct bma421_data *drv_data = dev->data;
 
 	ARG_UNUSED(unused);
 
@@ -129,7 +129,7 @@ int bma421_trigger_set(struct device *dev,
 		       const struct sensor_trigger *trig,
 		       sensor_trigger_handler_t handler)
 {
-	struct bma421_data *drv_data = dev->driver_data;
+	struct bma421_data *drv_data = dev->data;
 
 	if (trig->type == SENSOR_TRIG_DATA_READY) {
 		/* disable data ready interrupt while changing trigger params */
@@ -186,7 +186,7 @@ int bma421_trigger_set(struct device *dev,
 
 int bma421_init_interrupt(struct device *dev)
 {
-	struct bma421_data *drv_data = dev->driver_data;
+	struct bma421_data *drv_data = dev->data;
 
 	/* set latched interrupts */
 	if (i2c_reg_write_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
@@ -263,7 +263,7 @@ int bma421_init_interrupt(struct device *dev)
 	drv_data->dev = dev;
 #endif
 
-	gpio_pin_enable_callback(drv_data->gpio, CONFIG_BMA421_GPIO_PIN_NUM);
+//	gpio_pin_enable_callback(drv_data->gpio, CONFIG_BMA421_GPIO_PIN_NUM);
 
 	return 0;
 }

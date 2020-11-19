@@ -40,7 +40,7 @@ static void i2c_delay(unsigned int cycles_to_wait)
 
 static int bma421_sample_fetch(struct device *dev, enum sensor_channel chan)
 {
-	struct bma421_data *drv_data = dev->driver_data;
+	struct bma421_data *drv_data = dev->data;
 	u8_t buf[6];
 	u8_t lsb;
 	u8_t id = 0U;
@@ -105,7 +105,7 @@ static int bma421_channel_get(struct device *dev,
 		enum sensor_channel chan,
 		struct sensor_value *val)
 {
-	struct bma421_data *drv_data = dev->driver_data;
+	struct bma421_data *drv_data = dev->data;
 
 	/*
 	 * See datasheet "Sensor data" section for
@@ -149,7 +149,7 @@ static const struct sensor_driver_api bma421_driver_api = {
 
 int bma421_init(struct device *dev)
 {
-	struct bma421_data *drv_data = dev->driver_data;
+	struct bma421_data *drv_data = dev->data;
 	u8_t id = 0U;
 	drv_data->i2c = device_get_binding(CONFIG_BMA421_I2C_MASTER_DEV_NAME);
 	if (drv_data->i2c == NULL) {

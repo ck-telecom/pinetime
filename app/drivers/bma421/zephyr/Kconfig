@@ -71,7 +71,7 @@ config BMA421_TRIGGER_OWN_THREAD
 endchoice
 
 config BMA421_TRIGGER
-	bool
+	bool "Use BMA421 trigger"
 
 config BMA421_GPIO_DEV_NAME
 	string "GPIO device"
