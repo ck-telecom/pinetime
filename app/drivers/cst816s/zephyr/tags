@@ -1,0 +1,59 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+CLICK	cst816s.h	/^    CLICK,$/;"	e	enum:cst816s_gesture
+CONTACT	cst816s.h	/^    CONTACT = 2,$/;"	e	enum:cst816s_action
+CST816S_CHAN_GESTURE	cst816s.h	/^	CST816S_CHAN_GESTURE = SENSOR_CHAN_PRIV_START,$/;"	e	enum:cst816s_channel
+CST816S_CHAN_TOUCH_POINT_1	cst816s.h	/^	CST816S_CHAN_TOUCH_POINT_1,$/;"	e	enum:cst816s_channel
+CST816S_CHAN_TOUCH_POINT_2	cst816s.h	/^    CST816S_CHAN_TOUCH_POINT_2,$/;"	e	enum:cst816s_channel
+CST816S_GESTURE_CLICK	cst816s.h	30;"	d
+CST816S_GESTURE_DOUBLE_CLICK	cst816s.h	31;"	d
+CST816S_GESTURE_LONG_PRESS	cst816s.h	32;"	d
+CST816S_GESTURE_NONE	cst816s.h	25;"	d
+CST816S_GESTURE_SLIDE_DOWN	cst816s.h	27;"	d
+CST816S_GESTURE_SLIDE_LEFT	cst816s.h	28;"	d
+CST816S_GESTURE_SLIDE_RIGHT	cst816s.h	29;"	d
+CST816S_GESTURE_SLIDE_UP	cst816s.h	26;"	d
+CST816S_I2C_ADDRESS	cst816s.c	19;"	d	file:
+CST816S_REG_DATA	cst816s.h	23;"	d
+CST816S_REG_FINGER_NUM	cst816s.h	42;"	d
+CST816S_REG_GESTURE_ID	cst816s.h	40;"	d
+CST816S_REG_MOTION_MASK	cst816s.h	44;"	d
+CST816S_REG_XPOS_H	cst816s.h	34;"	d
+CST816S_REG_XPOS_L	cst816s.h	35;"	d
+CST816S_REG_YPOS_H	cst816s.h	37;"	d
+CST816S_REG_YPOS_L	cst816s.h	38;"	d
+DOUBLE_CLICK	cst816s.h	/^    DOUBLE_CLICK,$/;"	e	enum:cst816s_gesture
+DOWN	cst816s.h	/^    DOWN = 0,$/;"	e	enum:cst816s_action
+DT_DRV_COMPAT	cst816s.c	8;"	d	file:
+DT_DRV_COMPAT	cst816s_trigger.c	7;"	d	file:
+INTERRUPT_PIN	cst816s_trigger.c	19;"	d	file:
+LONG_PRESS	cst816s.h	/^    LONG_PRESS,$/;"	e	enum:cst816s_gesture
+NONE	cst816s.h	/^    NONE,$/;"	e	enum:cst816s_gesture
+RESET_PIN	cst816s.c	18;"	d	file:
+SLIDE_DOWN	cst816s.h	/^    SLIDE_DOWN,$/;"	e	enum:cst816s_gesture
+SLIDE_LEFT	cst816s.h	/^    SLIDE_LEFT,$/;"	e	enum:cst816s_gesture
+SLIDE_RIGHT	cst816s.h	/^    SLIDE_RIGHT,$/;"	e	enum:cst816s_gesture
+SLIDE_UP	cst816s.h	/^    SLIDE_UP,$/;"	e	enum:cst816s_gesture
+UP	cst816s.h	/^    UP = 1,$/;"	e	enum:cst816s_action
+ZEPHYR_INCLUDE_DRIVERS_SENSOR_CTS816A_H_	cst816s.h	8;"	d
+cst816s_action	cst816s.h	/^enum cst816s_action {$/;"	g
+cst816s_attr_set	cst816s_trigger.c	/^int cst816s_attr_set(const struct device *dev,$/;"	f
+cst816s_channel	cst816s.h	/^enum cst816s_channel {$/;"	g
+cst816s_channel_get	cst816s.c	/^static int cst816s_channel_get(const struct device *dev,$/;"	f	file:
+cst816s_chip_init	cst816s.c	/^static int cst816s_chip_init(const struct device *dev)$/;"	f	file:
+cst816s_chip_reset	cst816s.c	/^static void cst816s_chip_reset(const struct device* dev)$/;"	f	file:
+cst816s_driver	cst816s.c	/^struct cst816s_data cst816s_driver;$/;"	v	typeref:struct:cst816s_data
+cst816s_driver_api	cst816s.c	/^static const struct sensor_driver_api cst816s_driver_api = {$/;"	v	typeref:struct:sensor_driver_api	file:
+cst816s_gesture	cst816s.h	/^enum cst816s_gesture {$/;"	g
+cst816s_gpio_callback	cst816s_trigger.c	/^static void cst816s_gpio_callback(const struct device *dev,$/;"	f	file:
+cst816s_init	cst816s.c	/^int cst816s_init(const struct device *dev)$/;"	f
+cst816s_init_interrupt	cst816s_trigger.c	/^int cst816s_init_interrupt(const struct device *dev)$/;"	f
+cst816s_sample_fetch	cst816s.c	/^static int cst816s_sample_fetch(const struct device *dev, enum sensor_channel chan)$/;"	f	file:
+cst816s_thread	cst816s_trigger.c	/^static void cst816s_thread(struct cst816s_data *drv_data)$/;"	f	file:
+cst816s_thread_cb	cst816s_trigger.c	/^static void cst816s_thread_cb(const struct device *dev)$/;"	f	file:
+cst816s_trigger_set	cst816s_trigger.c	/^int cst816s_trigger_set(const struct device *dev,$/;"	f
+cst816s_work_cb	cst816s_trigger.c	/^static void cst816s_work_cb(struct k_work *work)$/;"	f	file:
