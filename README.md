@@ -9,3 +9,9 @@ cd pinetime/app
 
 west build -b pinetime_devkit0 .
 ```
+
+#### Flash
+```
+```
+
+#### Debug
