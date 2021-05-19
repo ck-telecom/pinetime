@@ -6,8 +6,8 @@
 #define COUNT_DOWN 5000
 #define BATTERY_PEROID_TIME 1
 
-static const struct device *charging_dev;
-static struct gpio_callback charging_cb;
+
+
 
 static const struct device* percentage_dev;
 
@@ -23,12 +23,6 @@ static const struct adc_channel_cfg m_1st_channel_cfg = {
 
 static struct k_timer timer;
 
-static void battery_charging_isr(const struct device *gpiobat, struct gpio_callback *cb, uint32_t pins)
-{
-    uint32_t res = gpio_pin_get(charging_dev, BAT_CHA);
-//	battery_update_charging_status(res != 1U);
-}
-
 void battery_update_percentage(struct k_timer *timer)
 {
     uint16_t data = 0;
@@ -40,13 +34,6 @@ void battery_update_percentage(struct k_timer *timer)
 int batttery_init(const struct device *dev)
 {
     int retval = 0;
-
-    charging_dev = device_get_binding("GPIO_0");
-//    if (charging_dev ==NULL)
-
-    gpio_pin_configure(charging_dev, BAT_CHA, GPIO_INPUT | GPIO_INT_EDGE_BOTH);
-    gpio_init_callback(&charging_cb, battery_charging_isr, BIT(BAT_CHA));
-    gpio_add_callback(charging_dev, &charging_cb);
 
     percentage_dev = device_get_binding("ADC_0");
     if (adc_channel_setup(percentage_dev, &m_1st_channel_cfg) < 0)) {
