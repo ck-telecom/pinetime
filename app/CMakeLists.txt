@@ -16,3 +16,5 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(pinetime)
 
 target_sources(app PRIVATE src/main.c)
+target_sources(app PRIVATE src/btn_event.c)
+target_sources(app PRIVATE src/backlight.c)
