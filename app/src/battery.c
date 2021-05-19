@@ -1,3 +1,5 @@
+#include "battery.h"
+
 #define CHANNEL_ID 7
 #define RESOLUTION 12
 #define DIVIDER 2
