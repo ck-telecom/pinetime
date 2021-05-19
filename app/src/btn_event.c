@@ -23,7 +23,7 @@ static void button_event_cb(struct device *dev, struct gpio_callback *cb, uint32
     k_timer_start(&timer_debounce, K_NO_WAIT, K_SECONDS(BTN_DEBOUNCE_TIME));
 }
 
-int btn_event_init()
+int btn_event_init(const struct device *dev)
 {
     int retval = 0;
     k_timer_init(&timer_debounce, button_event_send, NULL);
@@ -40,3 +40,5 @@ int btn_event_init()
 
     return retval;
 }
+
+SYS_INIT(btn_event_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);

@@ -37,7 +37,7 @@ void battery_update_percentage(struct k_timer *timer)
     // k_msg_put();
 }
 
-int batttery_init()
+int batttery_init(const struct device *dev)
 {
     int retval = 0;
 
@@ -73,3 +73,4 @@ int battery_read_voltage(uint16_t *data, int data_len)
     return retval;
 }
 
+SYS_INIT(batttery_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
