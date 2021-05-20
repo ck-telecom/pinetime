@@ -27,6 +27,8 @@ int backlight_enable(bool enable)
     gpio_pin_set_raw(backlight_dev, BACKLIGHT_1, enable ? 0 : 1);
     gpio_pin_set_raw(backlight_dev, BACKLIGHT_2, enable ? 0 : 1);
     gpio_pin_set_raw(backlight_dev, BACKLIGHT_3, enable ? 0 : 1);
+
+    return 0;
 }
 
 SYS_INIT(backlight_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);

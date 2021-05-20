@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2012-2014 Wind River Systems, Inc.
+ * Copyright (c) 2021 gouqs@hotmail.com
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr.h>
+#include <kernel.h>
 #include "view.h"
 
 #include <sys/slist.h>
@@ -12,7 +12,7 @@
 #define EVENT_STACK_SIZE 1024
 #define EVENT_PRIORITY 5
 
-struct evt {
+struct evt_node {
     uint32_t type;
     uint32_t id;
     void *ptr;
@@ -27,7 +27,7 @@ struct evt evt_ctx {
     struct widget *active_widget;
 };
 
-K_MSGQ_DEFINE(evt_msgq, sizeof(struct msg), 10, 4);
+static struct k_poll_signal signal;
 
 
 void evt_add_handler(struct evt *ctx, struct evt_node *node)
@@ -37,7 +37,20 @@ void evt_add_handler(struct evt *ctx, struct evt_node *node)
 
 void evt_del_handler(evt_node *node)
 {
-    
+    struct evt_node *n;
+    SYS_SLIST_FOR_EACH_NODE(evt_list, n) {
+        if (n == node)
+            sys_slist_find_and_remove();
+    }
+}
+
+int evt_submit(evt_t evt)
+{
+    struct evt_node *n;
+    SYS_SLIST_FOR_EACH_NODE(evt_list, n) {
+        if (n->event & evt)
+            n->event_cb(evt);
+    }
 }
 
 void evt_handler(struct gui *ctx, struct msg *m)
@@ -49,25 +62,37 @@ void evt_handler(struct gui *ctx, struct msg *m)
     }
 }
 
+void signal_do_trigger(event)
+{
+    k_poll_signal_raise(&signal, event);
+}
+
 void event_thread(void* arg1, void *arg2, void *arg3)
 {
     struct evt m;
     struct evt *ctx;
 
     sys_slist_init(&evt_list);
+    k_poll_signal_init(&signal);
+
+    struct k_poll_event events[1] = {
+        K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL,
+                                 K_POLL_MODE_NOTIFY_ONLY,
+                                 &signal),
+    };
 
     while (1)
     {
-        k_msgq_get(&evt_msgq, &m, K_MSEC(10)/* K_FOREVER */);
-        if (m.type == MSG_TYPE_GUI) {
-            gui_handler(ctx, &m);
-        } else if (m.type == MSG_TYPE_EVT) {
-            evt_handler(ctx, &m);
-        } else if(m.type == MSG_TYPE_GESTURE) {
-            // gesture_handler();
+        k_poll(events, 1, K_FOREVER);
+
+        if (events[0].signal->result == EVT_CLOCK_TICK) {
+            evt_submit(EVT_CLOCK_TICK);
+        } else if (events[0].signal->result == EVT_BATTERY_STATUS) {
+            evt_submit(EVT_BATTERY_STATUS);
         }
 
-        view_update_draw(ctx->active_widget);
+        events[0].signal->signaled = 0;
+        events[0].state = K_POLL_STATE_NOT_READY;
     }
 }
 

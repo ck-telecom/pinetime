@@ -7,6 +7,12 @@
 #ifndef _EVT_H
 #define _EVT_H
 
+#define EVT_CLOCK_TICK
+#define EVT_BATTERY_STATUS
+#define EVT_CHARGER_STATUS
+#define EVT_COMPASS_CHANGED
+#define EVT_
+
 #include <sys/slist.h>
 
 struct evt_node {
