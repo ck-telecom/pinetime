@@ -7,14 +7,15 @@
 #ifndef _EVT_H
 #define _EVT_H
 
-#define EVT_CLOCK_TICK
-#define EVT_BATTERY_STATUS
+#define EVT_CLOCK_TICK          (1 << 0)
+#define EVT_BATTERY_STATUS      (1 << 1)
 #define EVT_CHARGER_STATUS
 #define EVT_COMPASS_CHANGED
-#define EVT_
+#define EVT_BUTTON_PRESSED      (1 << 5)
+#define EVT_BUTTON_RELEASE      (1 << 6)
 
 #include <sys/slist.h>
-
+/*
 struct evt_node {
     sys_node_t node;
     uint32_t event;
@@ -23,6 +24,8 @@ struct evt_node {
 
 void evt_add_handler(struct evt *ctx, struct evt_node *node);
 void evt_del_handler(evt_node *node);
+*/
+void event_trigger(uint32_t event);
 
 #endif
 

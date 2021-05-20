@@ -6,7 +6,8 @@
 
 #include <zephyr.h>
 #include "view.h"
-#include "gui.h"
+
+#include "backlight.h"
 
 #define GUI_STACK_SIZE 1024
 #define GUI_PRIORITY 5
@@ -94,7 +95,7 @@ void gesure_handler(struct gui *ctx, uint32_t gesture)
         w->gui_event(w, gesture);
 }
 
-void gui_thread(void* arg1, void *arg2, void *arg3)
+void display_thread(void* arg1, void *arg2, void *arg3)
 {
     struct msg m;
     struct gui *ctx;
@@ -114,4 +115,4 @@ void gui_thread(void* arg1, void *arg2, void *arg3)
     }
 }
 
-K_THREAD_DEFINE(gui_tid, GUI_STACK_SIZE, gui_thread, NULL, NULL, NULL, GUI_PRIORTY, 0, 0);
+K_THREAD_DEFINE(gui_tid, GUI_STACK_SIZE, display_thread, NULL, NULL, NULL, GUI_PRIORTY, 0, 0);

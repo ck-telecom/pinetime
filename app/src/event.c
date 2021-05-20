@@ -5,13 +5,15 @@
  */
 
 #include <kernel.h>
-#include "view.h"
+#include "event.h"
 
 #include <sys/slist.h>
 
 #define EVENT_STACK_SIZE 1024
 #define EVENT_PRIORITY 5
 
+static struct k_poll_signal signal;
+#if 0
 struct evt_node {
     uint32_t type;
     uint32_t id;
@@ -27,7 +29,7 @@ struct evt evt_ctx {
     struct widget *active_widget;
 };
 
-static struct k_poll_signal signal;
+
 
 
 void evt_add_handler(struct evt *ctx, struct evt_node *node)
@@ -61,18 +63,14 @@ void evt_handler(struct gui *ctx, struct msg *m)
             n->view.event(n->view, event);
     }
 }
-
-void signal_do_trigger(event)
+#endif
+void event_trigger(uint32_t event)
 {
     k_poll_signal_raise(&signal, event);
 }
 
 void event_thread(void* arg1, void *arg2, void *arg3)
 {
-    struct evt m;
-    struct evt *ctx;
-
-    sys_slist_init(&evt_list);
     k_poll_signal_init(&signal);
 
     struct k_poll_event events[1] = {
@@ -86,10 +84,15 @@ void event_thread(void* arg1, void *arg2, void *arg3)
         k_poll(events, 1, K_FOREVER);
 
         if (events[0].signal->result == EVT_CLOCK_TICK) {
-            evt_submit(EVT_CLOCK_TICK);
+//            evt_submit(EVT_CLOCK_TICK);
         } else if (events[0].signal->result == EVT_BATTERY_STATUS) {
-            evt_submit(EVT_BATTERY_STATUS);
+//            evt_submit(EVT_BATTERY_STATUS);
+        } else if (events[0].signal->result == EVT_BUTTON_PRESSED) {
+            //???
+        } else if (events[0].signal->result == EVT_BUTTON_RELEASE) {
+
         }
+
 
         events[0].signal->signaled = 0;
         events[0].state = K_POLL_STATE_NOT_READY;
