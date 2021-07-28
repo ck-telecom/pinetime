@@ -5,20 +5,23 @@
  */
 
 #include <zephyr.h>
-#include "view.h"
+#include <lvgl.h>
+#include <logging/log.h>
 
-#include "backlight.h"
+#include "display.h"
 
-#define GUI_STACK_SIZE 1024
-#define GUI_PRIORITY 5
+#define DISPLAY_STACK_SIZE      1024
+#define DISPLAY_PRIORITY        5
 
+K_MSGQ_DEFINE(gui_msgq, sizeof(struct msg), 10, 4);
 
-
+LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
+#if 0
 struct gui gui_ctx {
     struct view *active_widget;
 };
 
-K_MSGQ_DEFINE(gui_msgq, sizeof(struct msg), 10, 4);
+
 
 int msg_send_event(struct msg *m, uint32_t event)
 {
@@ -94,25 +97,25 @@ void gesure_handler(struct gui *ctx, uint32_t gesture)
     if (w && w->gui_event)
         w->gui_event(w, gesture);
 }
-
+#endif
 void display_thread(void* arg1, void *arg2, void *arg3)
 {
     struct msg m;
-    struct gui *ctx;
+    // struct gui *ctx;
 
     while (1)
     {
-        k_msgq_get(&gui_msgq, &m, K_MSEC(10)/* K_FOREVER */); //used timeout to refresh UI
-        if (m.type == MSG_TYPE_GUI) {
+        k_msgq_get(&gui_msgq, &m, K_MSEC(10)); // 10 ms timeout
+/*       if (m.type == MSG_TYPE_GUI) {
             gui_handler(ctx, &m);
         } else if (m.type == MSG_TYPE_EVT) {
             evt_handler(ctx, m.event);
         } else if(m.type == MSG_TYPE_GESTURE) {
             gesture_handler(ctx, m.gesture);
-        }
-
-        // view_update_draw(ctx->active_widget);
+        }*/
+        lv_task_handler();
+        // LOG_INF("lv_task_handler");
     }
 }
 
-K_THREAD_DEFINE(gui_tid, GUI_STACK_SIZE, display_thread, NULL, NULL, NULL, GUI_PRIORTY, 0, 0);
+K_THREAD_DEFINE(dispaly, DISPLAY_STACK_SIZE, display_thread, NULL, NULL, NULL, DISPLAY_PRIORITY, 0, 0);

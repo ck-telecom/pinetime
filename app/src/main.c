@@ -11,13 +11,9 @@ void main(void)
 {
     printk("Hello World! %s\n", CONFIG_BOARD);
 
-
-    //lv_task_handler();
-
     while (1)
     {
-        //lv_task_handler();
         k_sleep(K_MSEC(10));
-        printk("Hello World! %s\n", CONFIG_BOARD);
+
     }
 }
