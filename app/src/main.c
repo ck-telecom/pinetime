@@ -18,5 +18,6 @@ void main(void)
     {
         //lv_task_handler();
         k_sleep(K_MSEC(10));
+        printk("Hello World! %s\n", CONFIG_BOARD);
     }
 }
