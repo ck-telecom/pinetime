@@ -6,7 +6,7 @@
  */
 
 #define DT_DRV_COMPAT hynitron_cst816s
-
+#include <device.h>
 #include <drivers/i2c.h>
 #include <init.h>
 #include <drivers/sensor.h>
@@ -113,9 +113,9 @@ static void cst816s_chip_reset(const struct device* dev)
 {
 	struct cst816s_data *drv_data = dev->data;
 
-	//gpio_pin_set(drv_data->reset_gpio, RESET_PIN, 0);
+	gpio_pin_set(drv_data->reset_gpio, RESET_PIN, 0);
 	k_msleep(5);
-	//gpio_pin_set(drv_data->reset_gpio, RESET_PIN, 1);
+	gpio_pin_set(drv_data->reset_gpio, RESET_PIN, 1);
 	k_msleep(50);
 }
 

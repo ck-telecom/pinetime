@@ -108,7 +108,7 @@ int cst816s_init_interrupt(const struct device *dev)
 	drv_data->gpio = device_get_binding(DT_INST_GPIO_LABEL(0, irq_gpios));
 	if (drv_data->gpio == NULL) {
 		LOG_DBG("Cannot get pointer to %s device",
-				DT_INST_GPIO_LABEL(0, int1_gpios));
+				DT_INST_GPIO_LABEL(0, irq_gpios));
 		return -EINVAL;
 	}
 
