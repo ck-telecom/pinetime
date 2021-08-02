@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define DT_DRV_COMPAT bosch_bma421
+#define DT_DRV_COMPAT bosch_bma4xx
 
 #include <device.h>
 #include <drivers/i2c.h>
@@ -26,8 +26,6 @@
 
 LOG_MODULE_REGISTER(BMA421, CONFIG_SENSOR_LOG_LEVEL);
 
-
-
 static void i2c_delay(unsigned int cycles_to_wait)
 {
 	u32_t start = k_cycle_get_32();
@@ -36,10 +34,6 @@ static void i2c_delay(unsigned int cycles_to_wait)
 	while (k_cycle_get_32() - start < cycles_to_wait) {
 	}
 }
-
-
-
-
 
 static int bma421_sample_fetch(struct device *dev, enum sensor_channel chan)
 {
@@ -239,9 +233,9 @@ static const struct bma421_config bma421_cfg = {
 	.i2c_bus = DT_INST_BUS_LABEL(0),
 	.i2c_addr = DT_INST_REG_ADDR(0),
 #if CONFIG_BMA421_TRIGGER
-	.drdy_pin = DT_INST_GPIO_PIN(0, irq_gpios),
-	.drdy_flags = DT_INST_GPIO_FLAGS(0, irq_gpios),
-	.drdy_controller = DT_INST_GPIO_LABEL(0, irq_gpios),
+	.drdy_pin = DT_INST_GPIO_PIN(0, int1_gpios),
+	.drdy_flags = DT_INST_GPIO_FLAGS(0, int1_gpios),
+	.drdy_controller = DT_INST_GPIO_LABEL(0, int1_gpios),
 #endif
 };
 
