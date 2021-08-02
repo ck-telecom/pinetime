@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#define DT_DRV_COMPAT bosch_bma421
+
+#include <device.h>
 #include <drivers/i2c.h>
 #include <init.h>
 #include <drivers/sensor.h>
@@ -98,7 +101,7 @@ static void bma421_channel_accel_convert(struct sensor_value *val,
 static void bma421_channel_value_add(struct sensor_value *val)
 {
 	val->val1 = 32; //todo -- here values can be read from REG 0x1E step counter
-	val->val2 = 88; 
+	val->val2 = 88;
 }
 
 static int bma421_channel_get(struct device *dev,
@@ -143,35 +146,32 @@ static const struct sensor_driver_api bma421_driver_api = {
 	.channel_get = bma421_channel_get,
 };
 
-
-
-
-
 int bma421_init(struct device *dev)
 {
+	const struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
 	u8_t id = 0U;
-	drv_data->i2c = device_get_binding(CONFIG_BMA421_I2C_MASTER_DEV_NAME);
+	drv_data->i2c = device_get_binding(cfg->i2c_bus);
 	if (drv_data->i2c == NULL) {
-		LOG_DBG("Could not get pointer to %s device",
-				CONFIG_BMA421_I2C_MASTER_DEV_NAME);
+		LOG_ERR("Could not get pointer to %s device",
+				cfg->i2c_bus);
 		return -EINVAL;
 	}
 
 	/* read device ID */
-	if (i2c_reg_read_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
+	if (i2c_reg_read_byte(drv_data->i2c, cfg->i2c_addr,
 				BMA421_REG_CHIP_ID, &id) < 0) {
-		LOG_DBG("Could not read chip id");
+		LOG_ERR("Could not read chip id");
 		return -EIO;
 	}
-
+	LOG_INF("id = 0x%x", id);
 	if (id != BMA421_CHIP_ID) {
-		LOG_DBG("Unexpected chip id (%x)", id);
+		LOG_ERR("Unexpected chip id (%x)", id);
 		return -EIO;
 	}
 
 
-	if (i2c_reg_update_byte(drv_data->i2c, BMA421_I2C_ADDRESS, BMA421_REG_CMD, BMA421_CMD_SOFT_RESET_MASK, BMA421_CMD_SOFT_RESET) < 0) { //soft reset
+	if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr, BMA421_REG_CMD, BMA421_CMD_SOFT_RESET_MASK, BMA421_CMD_SOFT_RESET) < 0) { //soft reset
 		//		MY_REGISTER5=0x33;
 	}
 //todo clean up debug registers
@@ -198,7 +198,7 @@ int bma421_init(struct device *dev)
 	}
 	MY_REGISTER3=id; // read statement to check if update took place -- useless afterwards todo delete
 	/* set g-range */
-	i2c_reg_read_byte(drv_data->i2c, BMA421_I2C_ADDRESS,BMA421_REG_ACC_RANGE, &id); 
+	i2c_reg_read_byte(drv_data->i2c, BMA421_I2C_ADDRESS,BMA421_REG_ACC_RANGE, &id);
 	id=id & 0xFC; // bit 1 and 0 of 0x41 are set to 0
 	id=id | BMA421_ACC_RANGE; //this is set with a variable from Kconfig
 
@@ -214,14 +214,14 @@ int bma421_init(struct device *dev)
 		MY_REGISTER5=id; //todo remove
 
 	i2c_delay(100);
-	i2c_reg_read_byte(drv_data->i2c, BMA421_I2C_ADDRESS,BMA421_REG_ACC_CONF, &id); 
+	i2c_reg_read_byte(drv_data->i2c, BMA421_I2C_ADDRESS,BMA421_REG_ACC_CONF, &id);
 	id=id & 0xF0; //bit 3,2,1,0 are set to 0
-	id=id | BMA421_ACC_ODR; 
+	id=id | BMA421_ACC_ODR;
 	if (i2c_reg_write_byte(drv_data->i2c, BMA421_I2C_ADDRESS, BMA421_REG_ACC_CONF, id) < 0) {
 		MY_REGISTER6=0xCC;
 	}
 	else
-		MY_REGISTER6=id; //todo remove 
+		MY_REGISTER6=id; //todo remove
 
 #ifdef CONFIG_BMA421_TRIGGER
 	if (bma421_init_interrupt(dev) < 0) {
@@ -235,6 +235,16 @@ int bma421_init(struct device *dev)
 
 struct bma421_data bma421_driver;
 
-DEVICE_AND_API_INIT(bma421, CONFIG_BMA421_NAME, bma421_init, &bma421_driver,
-		NULL, POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY,
-		&bma421_driver_api);
+static const struct bma421_config bma421_cfg = {
+	.i2c_bus = DT_INST_BUS_LABEL(0),
+	.i2c_addr = DT_INST_REG_ADDR(0),
+#if CONFIG_BMA421_TRIGGER
+	.drdy_pin = DT_INST_GPIO_PIN(0, irq_gpios),
+	.drdy_flags = DT_INST_GPIO_FLAGS(0, irq_gpios),
+	.drdy_controller = DT_INST_GPIO_LABEL(0, irq_gpios),
+#endif
+};
+
+DEVICE_DT_INST_DEFINE(0, bma421_init, NULL,
+			&bma421_driver, &bma421_cfg, POST_KERNEL,
+			CONFIG_SENSOR_INIT_PRIORITY, &bma421_driver_api);

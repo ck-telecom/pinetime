@@ -1,5 +1,5 @@
 /*
- * 
+ *
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -111,7 +111,7 @@ struct bma421_data {
 	s8_t temp_sample;
 
 #ifdef CONFIG_BMA421_TRIGGER
-	struct device *gpio;
+	const struct device *gpio;
 	struct gpio_callback gpio_cb;
 
 	struct sensor_trigger data_ready_trigger;
@@ -143,6 +143,17 @@ int bma421_attr_set(struct device *dev,
 		const struct sensor_value *val);
 
 int bma421_init_interrupt(struct device *dev);
+
 #endif
+
+struct bma421_config {
+	const char *i2c_bus;
+	uint16_t i2c_addr;
+#if CONFIG_BMA421_TRIGGER
+	gpio_pin_t drdy_pin;
+	gpio_flags_t drdy_flags;
+	const char *drdy_controller;
+#endif /* CONFIG_BMA421_TRIGGER */
+};
 
 #endif /* ZEPHYR_DRIVERS_SENSOR_BMA421_BMA421_H_ */

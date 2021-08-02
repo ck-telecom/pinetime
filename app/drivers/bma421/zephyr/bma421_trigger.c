@@ -23,7 +23,7 @@ int bma421_attr_set(struct device *dev,
 	struct bma421_data *drv_data = dev->data;
 	u64_t slope_th;
 u8_t buf[BMA421_FEATURE_SIZE];
-//default anymotion is selected 
+//default anymotion is selected
 //todo set any parameter eg stepcounter, tap double tap, wrist tilt etc
 // if (i2c_burst_read(drv_data->i2c, BMA421_I2C_ADDRESS, BMA421_REG_FEATURE, buf, BMA421_FEATURE_SIZE) < 0) {}
 
@@ -42,15 +42,15 @@ u8_t buf[BMA421_FEATURE_SIZE];
 	return 0;
 }
 
-static void bma421_gpio_callback(struct device *dev,
-				 struct gpio_callback *cb, u32_t pins)
+static void bma421_gpio_callback(const struct device *dev,
+				 struct gpio_callback *cb, uint32_t pins)
 {
 	struct bma421_data *drv_data =
 		CONTAINER_OF(cb, struct bma421_data, gpio_cb);
 
 	ARG_UNUSED(pins);
 
-	gpio_pin_disable_callback(dev, CONFIG_BMA421_GPIO_PIN_NUM);
+//	gpio_pin_disable_callback(dev, CONFIG_BMA421_GPIO_PIN_NUM);
 
 #if defined(CONFIG_BMA421_TRIGGER_OWN_THREAD)
 	k_sem_give(&drv_data->gpio_sem);
@@ -186,55 +186,55 @@ int bma421_trigger_set(struct device *dev,
 
 int bma421_init_interrupt(struct device *dev)
 {
+	const struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
 
 	/* set latched interrupts */
-	if (i2c_reg_write_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
+	if (i2c_reg_write_byte(drv_data->i2c, cfg->i2c_addr,
 			       BMA421_REG_INT_LATCH,
 			       BMA421_INT_MODE_LATCH) < 0) {
-		LOG_DBG("Could not set latched interrupts");
+		LOG_ERR("Could not set latched interrupts");
 		return -EIO;
 	}
 
 	/* setup data ready gpio interrupt */
-/*	drv_data->gpio = device_get_binding(CONFIG_BMA421_GPIO_DEV_NAME);
+	drv_data->gpio = device_get_binding(cfg->drdy_controller);
 	if (drv_data->gpio == NULL) {
-		LOG_DBG("Cannot get pointer to %s device",
-		    CONFIG_BMA421_GPIO_DEV_NAME);
+		LOG_ERR("Cannot get pointer to %s device",
+		    cfg->drdy_controller);
 		return -EINVAL;
 	}
 
-	gpio_pin_configure(drv_data->gpio, CONFIG_BMA421_GPIO_PIN_NUM,
-			   GPIO_DIR_IN | GPIO_INT | GPIO_INT_LEVEL |
-			   GPIO_INT_ACTIVE_HIGH | GPIO_INT_DEBOUNCE);
+	gpio_pin_configure(drv_data->gpio, cfg->drdy_pin,
+		GPIO_INPUT | cfg->drdy_flags);
 
 	gpio_init_callback(&drv_data->gpio_cb,
 			   bma421_gpio_callback,
-			   BIT(CONFIG_BMA421_GPIO_PIN_NUM));
+			   BIT(cfg->drdy_pin));
 
 	if (gpio_add_callback(drv_data->gpio, &drv_data->gpio_cb) < 0) {
-		LOG_DBG("Could not set gpio callback");
+		LOG_ERR("Could not set gpio callback");
 		return -EIO;
 	}
-*/
+#if 0
 	/* map data ready interrupt to INT1 */
-/*	if (i2c_reg_update_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
+	if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
 				BMA421_REG_INT_MAP_1,
 				BMA421_INT_MAP_1_BIT_DATA,
 				BMA421_INT_MAP_1_BIT_DATA) < 0) {
 		LOG_DBG("Could not map data ready interrupt pin");
 		return -EIO;
 	}
-*/ 
+
 	/* map any-motion interrupt to INT1 */
-	if (i2c_reg_update_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
+	if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
 				BMA421_REG_INT1_MAP,
 				BMA421_INT_MAP_MOTION,
 				BMA421_INT_MAP_MOTION) < 0) {
-		LOG_DBG("Could not map any-motion interrupt pin");
+		LOG_ERR("Could not map any-motion interrupt pin");
 		return -EIO;
 	}
-
+#endif
 /*	if (i2c_reg_update_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
 				BMA421_REG_INT1_MAP,
 				BMA421_BIT_DATA_EN, 0) < 0) {
