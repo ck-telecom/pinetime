@@ -58,7 +58,7 @@ static void button_released(struct button_handle *handle)
     uint32_t diff = now - handle->press_time;
     /* check long press timer expired */
     if (handle->click_config.long_click.handler && handle->state == BUTTON_STATE_LONG) {
-        LOG_INF("button long pressed");
+        LOG_INF("button long released");
     } else if (handle->click_config.single_click.up_handler) {
         LOG_INF("button released");
     }
@@ -78,8 +78,6 @@ static void button_update(uint8_t id, uint8_t pressed)
     }
 }
 
-
-#if 1
 static uint8_t button_check_time()
 {
     struct button_handle *button = NULL;
@@ -116,7 +114,7 @@ static uint8_t button_check_time()
 
     return any_pressed;
 }
-#endif
+
 void button_event_send(struct k_timer *timer)
 {
     const struct device *button_dev = k_timer_user_data_get(timer);
