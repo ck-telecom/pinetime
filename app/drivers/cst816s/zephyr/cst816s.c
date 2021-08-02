@@ -34,7 +34,7 @@ static int cst816s_sample_fetch(const struct device *dev, enum sensor_channel ch
 	 */
 	if (i2c_burst_read(drv_data->i2c, CST816S_I2C_ADDRESS,
 				CST816S_REG_DATA, buf, 9) < 0) {
-		LOG_DBG("Could not read data");
+		LOG_ERR("Could not read data");
 		return -EIO;
 	}
 
@@ -147,11 +147,12 @@ static int cst816s_chip_init(const struct device *dev)
 
 int cst816s_init(const struct device *dev)
 {
+	int retval = 0;
 	struct cst816s_data *drv_data = dev->data;
 
 	drv_data->i2c = device_get_binding(DT_INST_BUS_LABEL(0));
 	if (drv_data->i2c == NULL) {
-		LOG_DBG("Could not get pointer to %s device",
+		LOG_ERR("Could not get pointer to %s device",
 				DT_INST_BUS_LABEL(0));
 		return -EINVAL;
 	}
@@ -160,7 +161,7 @@ int cst816s_init(const struct device *dev)
 	drv_data->reset_gpio = device_get_binding(
 			DT_INST_GPIO_LABEL(0, rst_gpios));
 	if (drv_data->reset_gpio == NULL) {
-		LOG_DBG("Cannot get pointer to %s device",
+		LOG_ERR("Cannot get pointer to %s device",
 		    DT_INST_GPIO_LABEL(0, rst_gpios));
 		return -EINVAL;
 	}
@@ -169,9 +170,12 @@ int cst816s_init(const struct device *dev)
 	LOG_INF("configure OUTPUT ACTIVE");
 	gpio_pin_configure(drv_data->reset_gpio, RESET_PIN,
 			GPIO_OUTPUT | RESET_FLAGS);
-
-	cst816s_chip_init(dev);
 #endif
+	retval = cst816s_chip_init(dev);
+	if (retval != 0) {
+		LOG_ERR("cst816s init error");
+		return retval;
+	}
 
 #ifdef CONFIG_CST816S_TRIGGER
 	if (cst816s_init_interrupt(dev) < 0) {
