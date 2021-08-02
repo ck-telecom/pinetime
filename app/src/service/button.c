@@ -17,6 +17,7 @@
 
 LOG_MODULE_REGISTER(button, LOG_LEVEL_INF);
 
+static const struct device *button_dev;
 static struct k_timer timer_debounce;
 
 static void button_event_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
@@ -35,10 +36,10 @@ struct node {
     //struct sys_slist_t evt_list;
 };
 
-//static inline int button_is_pressed(uint8_t id)
-//{
-//    return gpio_pin_get(button_dev, KEY_IN);
-//}
+static inline int button_is_pressed(uint8_t id)
+{
+    return gpio_pin_get(button_dev, KEY_IN);
+}
 
 static void button_pressed(struct button_handle *handle)
 {
@@ -70,7 +71,7 @@ static void button_update(uint8_t id, uint8_t pressed)
 {
     struct button_handle *handle = &button_handle_array[id];
 
-    if (pressed) {
+    if (pressed == BUTTON_STATE_PRESSED) {
         button_pressed(handle);
     } else {
         button_released(handle);
@@ -87,7 +88,7 @@ static uint8_t button_check_time()
     uint32_t now = k_uptime_get();
     for (int i = 0; i < NUM_BUTTONS; i++) {
         button = &button_handle_array[i];
-        // pressed = button_is_pressed(i);
+        pressed = button_is_pressed(i);
         if (!pressed) {
             continue;
         } else {
@@ -97,7 +98,7 @@ static uint8_t button_check_time()
 /*        if (button->click_config.single_click.handler && button->click_config.single_click.repeat_interval_ms) {
             if (now > button->repeat_time + button->click_config.single_click.repeat_interval_ms) {
                 button->state = BUTTON_STATE_REPEATING;
-                
+
                 button->repeat_time = now;
             }
         }*/
@@ -106,7 +107,7 @@ static uint8_t button_check_time()
             button->click_config.long_click.delay_ms > 0) {
             if (now > button->press_time + button->click_config.long_click.delay_ms) {
                 button->state = BUTTON_STATE_LONG;
-                    
+                LOG_INF("button long pressed");
                 button->press_time = 0;
                 button->repeat_time = 0;
             }
@@ -131,7 +132,7 @@ int button_init(const struct device *dev)
 {
     int retval = 0;
 
-    const struct device *button_dev = device_get_binding(BTN_PORT);
+    button_dev = device_get_binding(BTN_PORT);
     if (!button_dev) {
         return -ENODEV;
     }
@@ -165,15 +166,16 @@ SYS_INIT(button_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 static void button_thread()
 {
     struct msg m;
-    //uint8_t flag = 0;
+    uint8_t flag = 0;
     k_timeout_t timeout = K_FOREVER;
     for (; ;) {
         if (k_msgq_get(&button_msgq, &m, timeout) == 0) {
             button_update(0, /* button_is_pressed(id) */m.val);
         }
 
-        // flag = button_check_time();
-        // timeout = ( flag == 0 ? K_FOREVER : K_MSEC(10) );*/
+        flag = button_check_time();
+        timeout = ( flag == 0 ? K_FOREVER : K_MSEC(10) );
+        // LOG_INF("check time");
     }
 }
 K_THREAD_DEFINE(button_tid, BUTTON_STACK_SIZE, button_thread, NULL, NULL, NULL, BUTTON_PRIORITY, 0, 0);
