@@ -15,14 +15,23 @@
 #include <logging/log.h>
 LOG_MODULE_DECLARE(BMA421, CONFIG_SENSOR_LOG_LEVEL);
 
+/*!
+ *  @brief API sets the interrupt to either interrupt1 or
+ *  interrupt2 pin in the sensor.
+ */
+//static int bma4_map_intterupt()
+//{
+//    i2c_burst_read(drv_data->i2c, cfg->i2c_addr, BMA4_INT_MAP_1_ADDR)
+//}
+
 int bma421_attr_set(struct device *dev,
 		    enum sensor_channel chan,
 		    enum sensor_attribute attr,
 		    const struct sensor_value *val)
 {
 	struct bma421_data *drv_data = dev->data;
-	u64_t slope_th;
-u8_t buf[BMA421_FEATURE_SIZE];
+	uint64_t slope_th;
+uint8_t buf[BMA421_FEATURE_SIZE];
 //default anymotion is selected
 //todo set any parameter eg stepcounter, tap double tap, wrist tilt etc
 // if (i2c_burst_read(drv_data->i2c, BMA421_I2C_ADDRESS, BMA421_REG_FEATURE, buf, BMA421_FEATURE_SIZE) < 0) {}
@@ -63,7 +72,7 @@ static void bma421_thread_cb(void *arg)
 {
 	struct device *dev = arg;
 	struct bma421_data *drv_data = dev->data;
-	u8_t status = 0U;
+	uint8_t status = 0U;
 	int err = 0;
 
 	/* check for data ready */
@@ -129,39 +138,42 @@ int bma421_trigger_set(struct device *dev,
 		       const struct sensor_trigger *trig,
 		       sensor_trigger_handler_t handler)
 {
+	struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
 
 	if (trig->type == SENSOR_TRIG_DATA_READY) {
 		/* disable data ready interrupt while changing trigger params */
-/*		if (i2c_reg_update_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
-					BMA421_REG_INT_EN_1,
+/*		if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
+					BMA421_REG_INT_CONFIG0,
 					BMA421_BIT_DATA_EN, 0) < 0) {
 			LOG_DBG("Could not disable data ready interrupt");
 			return -EIO;
 		}
-
+*/
 		drv_data->data_ready_handler = handler;
 		if (handler == NULL) {
 			return 0;
 		}
 		drv_data->data_ready_trigger = *trig;
-*/
+
 		/* enable data ready interrupt */
-/*		if (i2c_reg_update_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
-					BMA421_REG_INT_EN_1,
+#if 0
+		if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
+					BMA421_REG_INT_CONFIG0,
 					BMA421_BIT_DATA_EN,
 					BMA421_BIT_DATA_EN) < 0) {
 			LOG_DBG("Could not enable data ready interrupt");
 			return -EIO;
-		}*/
+		}
+#endif
 	} else if (trig->type == SENSOR_TRIG_DELTA) {
 		/* disable any-motion interrupt while changing trigger params */
-		if (i2c_reg_update_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
+		/*if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
 					BMA421_REG_INT1_MAP,
 					BMA421_INT_MAP_MOTION, 0) < 0) {
-			LOG_DBG("Could not disable data ready interrupt");
+			LOG_ERR("Could not disable data ready interrupt");
 			return -EIO;
-		}
+		}*/
 
 		drv_data->any_motion_handler = handler;
 		if (handler == NULL) {
@@ -170,13 +182,13 @@ int bma421_trigger_set(struct device *dev,
 		drv_data->any_motion_trigger = *trig;
 
 		/* enable any-motion interrupt */
-		if (i2c_reg_update_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
+		/*if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
 					BMA421_REG_INT1_MAP,
 					BMA421_INT_MAP_MOTION,
 					BMA421_INT_MAP_MOTION) < 0) {
-			LOG_DBG("Could not enable data ready interrupt");
+			LOG_ERR("Could not enable data ready interrupt");
 			return -EIO;
-		}
+		}*/
 	} else {
 		return -ENOTSUP;
 	}
@@ -209,8 +221,8 @@ int bma421_init_interrupt(struct device *dev)
 		GPIO_INPUT | cfg->drdy_flags);
 
 	gpio_init_callback(&drv_data->gpio_cb,
-			   bma421_gpio_callback,
-			   BIT(cfg->drdy_pin));
+			bma421_gpio_callback,
+			BIT(cfg->drdy_pin));
 
 	if (gpio_add_callback(drv_data->gpio, &drv_data->gpio_cb) < 0) {
 		LOG_ERR("Could not set gpio callback");

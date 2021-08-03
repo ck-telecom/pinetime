@@ -28,7 +28,7 @@ LOG_MODULE_REGISTER(BMA421, CONFIG_SENSOR_LOG_LEVEL);
 
 static void i2c_delay(unsigned int cycles_to_wait)
 {
-	u32_t start = k_cycle_get_32();
+	uint32_t start = k_cycle_get_32();
 
 	/* Wait until the given number of cycles have passed */
 	while (k_cycle_get_32() - start < cycles_to_wait) {
@@ -38,9 +38,9 @@ static void i2c_delay(unsigned int cycles_to_wait)
 static int bma421_sample_fetch(struct device *dev, enum sensor_channel chan)
 {
 	struct bma421_data *drv_data = dev->data;
-	u8_t buf[6];
-	u8_t lsb;
-	u8_t id = 0U;
+	uint8_t buf[6];
+	uint8_t lsb;
+	uint8_t id = 0U;
 	i2c_delay(1000);
 
 	__ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL);
@@ -56,17 +56,17 @@ static int bma421_sample_fetch(struct device *dev, enum sensor_channel chan)
 	}
 
 	lsb = (buf[0] & BMA421_ACCEL_LSB_MASK) >> BMA421_ACCEL_LSB_SHIFT;
-	drv_data->x_sample = (((s8_t)buf[1]) << BMA421_ACCEL_LSB_BITS) | lsb;
+	drv_data->x_sample = (((uint16_t)buf[1]) << BMA421_ACCEL_LSB_BITS) | lsb;
 
 	lsb = (buf[2] & BMA421_ACCEL_LSB_MASK) >> BMA421_ACCEL_LSB_SHIFT;
-	drv_data->y_sample = (((s8_t)buf[3]) << BMA421_ACCEL_LSB_BITS) | lsb;
+	drv_data->y_sample = (((uint16_t)buf[3]) << BMA421_ACCEL_LSB_BITS) | lsb;
 
 	lsb = (buf[4] & BMA421_ACCEL_LSB_MASK) >> BMA421_ACCEL_LSB_SHIFT;
-	drv_data->z_sample = (((s8_t)buf[5]) << BMA421_ACCEL_LSB_BITS) | lsb;
+	drv_data->z_sample = (((uint16_t)buf[5]) << BMA421_ACCEL_LSB_BITS) | lsb;
 
 	if (i2c_reg_read_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
 				BMA421_REG_TEMP,
-				(u8_t *)&drv_data->temp_sample) < 0) {
+				(uint8_t *)&drv_data->temp_sample) < 0) {
 		LOG_DBG("Could not read temperature data");
 		return -EIO;
 	}
@@ -74,7 +74,7 @@ static int bma421_sample_fetch(struct device *dev, enum sensor_channel chan)
 }
 
 static void bma421_channel_accel_convert(struct sensor_value *val,
-		s64_t raw_val)
+		uint16_t raw_val)
 {
 	/*
 	 * accel_val = (sample * BMA280_PMU_FULL_RAGE) /
@@ -144,7 +144,7 @@ int bma421_init(struct device *dev)
 {
 	const struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
-	u8_t id = 0U;
+	uint8_t id = 0U;
 	drv_data->i2c = device_get_binding(cfg->i2c_bus);
 	if (drv_data->i2c == NULL) {
 		LOG_ERR("Could not get pointer to %s device",
