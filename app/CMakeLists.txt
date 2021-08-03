@@ -1,18 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
-cmake_minimum_required(VERSION 3.13.1)
-
-# Add the board
-# list(APPEND BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR}/boards)
-# list(APPEND DTS_ROOT ${CMAKE_CURRENT_LIST_DIR})
-
 # Add out-off-tree drivers
 # list(APPEND ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/drivers/hrs3300)
 list(APPEND ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/drivers/bma421)
-# KSCAN can not be out-of-tree built
 list(APPEND ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/drivers/cst816s)
 
-
+cmake_minimum_required(VERSION 3.13.1)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(pinetime)
 
