@@ -6,6 +6,7 @@
  */
 
 #define DT_DRV_COMPAT hynitron_cst816s
+
 #include <device.h>
 #include <drivers/i2c.h>
 #include <init.h>
@@ -22,6 +23,7 @@ LOG_MODULE_REGISTER(CST816S, CONFIG_SENSOR_LOG_LEVEL);
 
 static int cst816s_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
+	const struct cst816s_config *cfg = dev->config;
 	struct cst816s_data *drv_data = dev->data;
 	uint8_t buf[9];
 	uint8_t msb;
@@ -32,7 +34,7 @@ static int cst816s_sample_fetch(const struct device *dev, enum sensor_channel ch
 	 * since all accel data register addresses are consecutive,
 	 * a burst read can be used to read all the samples
 	 */
-	if (i2c_burst_read(drv_data->i2c, CST816S_I2C_ADDRESS,
+	if (i2c_burst_read(drv_data->i2c, cfg->i2c_addr,
 				CST816S_REG_DATA, buf, 9) < 0) {
 		LOG_ERR("Could not read data");
 		return -EIO;
@@ -121,12 +123,13 @@ static void cst816s_chip_reset(const struct device* dev)
 
 static int cst816s_chip_init(const struct device *dev)
 {
+	const struct cst816s_config *cfg = dev->config;
 	struct cst816s_data *drv_data = dev->data;
 
-	cst816s_chip_reset(dev);
+	// cst816s_chip_reset(dev);
 
-	if (i2c_reg_read_byte(drv_data->i2c, CST816S_I2C_ADDRESS,
-			      CST816S_REG_CHIP_ID, &drv_data->chip_id) < 0) {
+	if (i2c_reg_read_byte(drv_data->i2c, cfg->i2c_addr,
+			CST816S_REG_CHIP_ID, &drv_data->chip_id) < 0) {
 		LOG_ERR("failed reading chip id");
 		return -EIO;
 	}
@@ -135,7 +138,7 @@ static int cst816s_chip_init(const struct device *dev)
 		LOG_ERR("CST816S wrong chip id: returned 0x%x", drv_data->chip_id);
 	}
 
-	if (i2c_reg_update_byte(drv_data->i2c, CST816S_I2C_ADDRESS,
+	if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
 				CST816S_REG_MOTION_MASK,
 				(CST816S_MOTION_EN_DCLICK), (CST816S_MOTION_EN_DCLICK)) < 0) {
 		LOG_ERR("Could not enable double click");
@@ -148,12 +151,12 @@ static int cst816s_chip_init(const struct device *dev)
 int cst816s_init(const struct device *dev)
 {
 	int retval = 0;
+    const struct cst816s_config *cfg = dev->config;
 	struct cst816s_data *drv_data = dev->data;
 
-	drv_data->i2c = device_get_binding(DT_INST_BUS_LABEL(0));
+	drv_data->i2c = device_get_binding(cfg->i2c_bus);
 	if (drv_data->i2c == NULL) {
-		LOG_ERR("Could not get pointer to %s device",
-				DT_INST_BUS_LABEL(0));
+		LOG_ERR("Could not get pointer to %s device", cfg->i2c_bus);
 		return -EINVAL;
 	}
 #if DT_INST_NODE_HAS_PROP(0, rst_gpios)
@@ -186,8 +189,18 @@ int cst816s_init(const struct device *dev)
 	return 0;
 }
 
+static const struct cst816s_config cst816s_cfg = {
+	.i2c_bus = DT_INST_BUS_LABEL(0),
+	.i2c_addr = DT_INST_REG_ADDR(0),
+#if CONFIG_CST816S_TRIGGER
+	.drdy_pin = DT_INST_GPIO_PIN(0, irq_gpios),
+	.drdy_flags = DT_INST_GPIO_FLAGS(0, irq_gpios),
+	.drdy_controller = DT_INST_GPIO_LABEL(0, irq_gpios),
+#endif
+};
+
 struct cst816s_data cst816s_driver;
 
-DEVICE_AND_API_INIT(cst816s, DT_INST_LABEL(0), cst816s_init, &cst816s_driver,
-		NULL, POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY,
-		&cst816s_driver_api);
+DEVICE_DT_INST_DEFINE(0, cst816s_init, NULL,
+		&cst816s_driver, &cst816s_cfg, POST_KERNEL,
+		CONFIG_SENSOR_INIT_PRIORITY, &cst816s_driver_api);

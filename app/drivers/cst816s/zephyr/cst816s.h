@@ -13,7 +13,6 @@
 #include <zephyr/types.h>
 #include <drivers/gpio.h>
 
-#define CST816S_I2C_ADDRESS	            0x15
 
 #define CST816S_CHIP_ID                 0xB4
 
@@ -147,6 +146,16 @@ struct cst816s_data {
 	struct k_work work;
 #endif
 
+#endif /* CONFIG_CST816S_TRIGGER */
+};
+
+struct cst816s_config {
+	const char *i2c_bus;
+	uint16_t i2c_addr;
+#if CONFIG_CST816S_TRIGGER
+	gpio_pin_t drdy_pin;
+	gpio_flags_t drdy_flags;
+	const char *drdy_controller;
 #endif /* CONFIG_CST816S_TRIGGER */
 };
 
