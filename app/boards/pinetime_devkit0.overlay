@@ -18,3 +18,7 @@
 	ch0-pin = <16>;
 	ch0-inverted;
 };
+
+&adc {
+	status = "okay";
+};

@@ -1,4 +1,5 @@
-#include "battery.h"
+#include <drivers/adc.h>
+#include <logging/log.h>
 
 #define CHANNEL_ID 7
 #define RESOLUTION 12
@@ -6,8 +7,7 @@
 #define COUNT_DOWN 5000
 #define BATTERY_PEROID_TIME 1
 
-
-
+LOG_MODULE_REGISTER(BATTERY, LOG_LEVEL_INF);
 
 static const struct device* percentage_dev;
 
@@ -23,29 +23,7 @@ static const struct adc_channel_cfg m_1st_channel_cfg = {
 
 static struct k_timer timer;
 
-void battery_update_percentage(struct k_timer *timer)
-{
-    uint16_t data = 0;
-    battery_read_voltage(&data, sizeof(data));
-    // send btn event
-    // k_msg_put();
-}
-
-int batttery_init(const struct device *dev)
-{
-    int retval = 0;
-
-    percentage_dev = device_get_binding("ADC_0");
-    if (adc_channel_setup(percentage_dev, &m_1st_channel_cfg) < 0)) {
-
-    }
-    k_timer_init(&timer, battery_update_percentage, NULL);
-    k_timer_start(&timer, K_NO_WAIT, K_SECONDS(BATTERY_PEROID_TIME));
-
-    return retval;
-}
-
-int battery_read_voltage(uint16_t *data, int data_len)
+static int battery_read_voltage(uint16_t *data, int data_len)
 {
     int retval = 0;
 
@@ -60,4 +38,26 @@ int battery_read_voltage(uint16_t *data, int data_len)
     return retval;
 }
 
+void battery_update_percentage(struct k_timer *timer)
+{
+    uint16_t data = 0;
+    battery_read_voltage(&data, sizeof(data));
+    LOG_INF("adc raw:0x%x", data);
+    // send btn event
+    // k_msg_put();
+}
+
+int batttery_init(const struct device *dev)
+{
+    int retval = 0;
+
+    percentage_dev = device_get_binding("ADC_0");
+    if (adc_channel_setup(percentage_dev, &m_1st_channel_cfg) < 0) {
+        LOG_ERR("error setup adc channel");
+    }
+    k_timer_init(&timer, battery_update_percentage, NULL);
+    k_timer_start(&timer, K_NO_WAIT, K_SECONDS(BATTERY_PEROID_TIME));
+
+    return retval;
+}
 SYS_INIT(batttery_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
