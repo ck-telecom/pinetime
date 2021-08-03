@@ -115,9 +115,9 @@ static void cst816s_chip_reset(const struct device* dev)
 {
 	struct cst816s_data *drv_data = dev->data;
 
-	gpio_pin_set(drv_data->reset_gpio, RESET_PIN, 0);
+	gpio_pin_set_raw(drv_data->reset_gpio, RESET_PIN, 0);
 	k_msleep(5);
-	gpio_pin_set(drv_data->reset_gpio, RESET_PIN, 1);
+	gpio_pin_set_raw(drv_data->reset_gpio, RESET_PIN, 1);
 	k_msleep(50);
 }
 
@@ -126,7 +126,7 @@ static int cst816s_chip_init(const struct device *dev)
 	const struct cst816s_config *cfg = dev->config;
 	struct cst816s_data *drv_data = dev->data;
 
-	// cst816s_chip_reset(dev);
+	cst816s_chip_reset(dev);
 
 	if (i2c_reg_read_byte(drv_data->i2c, cfg->i2c_addr,
 			CST816S_REG_CHIP_ID, &drv_data->chip_id) < 0) {
