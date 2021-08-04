@@ -5,6 +5,8 @@
  */
 
 #include <zephyr.h>
+#include <device.h>
+#include <drivers/display.h>
 #include <lvgl.h>
 #include <logging/log.h>
 
@@ -102,6 +104,13 @@ void display_thread(void* arg1, void *arg2, void *arg3)
 {
     struct msg m;
     // struct gui *ctx;
+    const struct device *display_dev;
+    display_dev = device_get_binding(CONFIG_LVGL_DISPLAY_DEV_NAME);
+    if (display_dev == NULL) {
+        LOG_ERR("device not found.  Aborting test.");
+        return;
+    }
+    display_blanking_off(display_dev);
 
     while (1)
     {
