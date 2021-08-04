@@ -2,6 +2,7 @@
 / {
 	aliases {
 		pwm-motor = &pwm_led0;
+		charger = &charger_pin;
 	};
 
 	pwmleds {
@@ -9,6 +10,14 @@
 		pwm_led0: pwm_led_0 {
 			pwms = <&pwm0 16>;
 			label = "pwm motor";
+		};
+	};
+
+	charger {
+		compatible = "gpio-keys";
+		charger_pin: charger_pin_0 {
+			gpios = <&gpio0 12 GPIO_ACTIVE_LOW>;
+			label = "charger";
 		};
 	};
 };
