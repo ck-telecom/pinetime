@@ -100,6 +100,7 @@ void gesure_handler(struct gui *ctx, uint32_t gesture)
         w->gui_event(w, gesture);
 }
 #endif
+extern lv_obj_t *screen_home_draw();
 void display_thread(void* arg1, void *arg2, void *arg3)
 {
     struct msg m;
@@ -111,6 +112,7 @@ void display_thread(void* arg1, void *arg2, void *arg3)
         return;
     }
     display_blanking_off(display_dev);
+    lv_obj_t *obj = screen_home_draw();
 
     while (1)
     {
