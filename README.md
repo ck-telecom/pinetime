@@ -9,3 +9,5 @@ west build -b pinetime_dev0 .
 
 # flash
 west flash
+
+contribution is welcome!
