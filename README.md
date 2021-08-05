@@ -5,8 +5,10 @@ zephyr based PineTime smartwatch
 https://wiki.pine64.org/index.php/PineTime
 
 # build
+```
+cd pinetime/app
 west build -b pinetime_dev0 .
-
+```
 # flash
 west flash
 
