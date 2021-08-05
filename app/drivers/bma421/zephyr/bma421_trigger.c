@@ -9,6 +9,7 @@
 #include <sys/util.h>
 #include <kernel.h>
 #include <drivers/sensor.h>
+#include <stdbool.h>
 
 #include "bma421.h"
 
@@ -19,15 +20,45 @@ LOG_MODULE_DECLARE(BMA421, CONFIG_SENSOR_LOG_LEVEL);
  *  @brief API sets the interrupt to either interrupt1 or
  *  interrupt2 pin in the sensor.
  */
-//static int bma4_map_intterupt()
-//{
-//    i2c_burst_read(drv_data->i2c, cfg->i2c_addr, BMA4_INT_MAP_1_ADDR)
-//}
+static int bma4_map_intterupt(struct device *dev, uint8_t int_line, uint16_t int_map, bool enable)
+{
+	int retval = 0;
+	uint8_t data[3] = { 0 };
+	uint8_t index[2] = { BMA421_REG_INT_MAP_1, BMA421_REG_INT_MAP_2 };
+	const struct bma421_config *cfg = dev->config;
+	struct bma421_data *drv_data = dev->data;
+
+	retval = i2c_burst_read(drv_data->i2c, cfg->i2c_addr, BMA421_REG_INT_MAP_1, data, 3);
+	if (retval) {
+		LOG_ERR("error when read %d", BMA421_REG_INT_MAP_1);
+		return retval;
+	}
+	if (enable == true) {
+		/* Feature interrupt mapping */
+		data[int_line] = (uint8_t)(int_map & (0x00FF));
+
+		/* Hardware interrupt mapping */
+		data[2] = (uint8_t)((int_map & (0xFF00)) >> 8);
+	} else {
+		/* Feature interrupt un-mapping */
+		data[int_line] &= (~(uint8_t)(int_map & (0x00FF)));
+
+		/* Hardware interrupt un-mapping */
+		data[2] &= (~(uint8_t)((int_map & (0xFF00)) >> 8));
+	}
+
+	retval = i2c_reg_write_byte(drv_data->i2c, cfg->i2c_addr, index[int_line], &data[int_line]);
+	if (retval == 0)
+	{
+		retval = i2c_reg_write_byte(drv_data->i2c, cfg->i2c_addr, BMA421_REG_INT_MAP_DATA, &data[2]);
+	}
+	return retval;
+}
 
 int bma421_attr_set(struct device *dev,
-		    enum sensor_channel chan,
-		    enum sensor_attribute attr,
-		    const struct sensor_value *val)
+			enum sensor_channel chan,
+			enum sensor_attribute attr,
+			const struct sensor_value *val)
 {
 	struct bma421_data *drv_data = dev->data;
 	uint64_t slope_th;
@@ -79,21 +110,13 @@ static void bma421_thread_cb(void *arg)
 /*	err = i2c_reg_read_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
 				BMA421_REG_INT_STATUS_1, &status);
 	if (status & BMA421_BIT_DATA_INT_STATUS &&
-	    drv_data->data_ready_handler != NULL &&
-	    err == 0) {
+		drv_data->data_ready_handler != NULL &&
+		err == 0) {
 		drv_data->data_ready_handler(dev,
-					     &drv_data->data_ready_trigger);
+						 &drv_data->data_ready_trigger);
 	}
 */
 	/* check for any motion */
-	err = i2c_reg_read_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
-				BMA421_REG_INT_STATUS_0, &status);
-	if (status &&
-	    drv_data->any_motion_handler != NULL &&
-	    err == 0) {
-		drv_data->any_motion_handler(dev,
-					     &drv_data->data_ready_trigger);
-
 		/* clear latched interrupt -- according this is already done by reading the register*/
 /*		err = i2c_reg_update_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
 					  BMA421_REG_INT_RST_LATCH,
@@ -104,7 +127,7 @@ static void bma421_thread_cb(void *arg)
 			LOG_DBG("Could not update clear the interrupt");
 			return;
 		}*/
-	}
+
 
 //	gpio_pin_enable_callback(drv_data->gpio, CONFIG_BMA421_GPIO_PIN_NUM);
 }
@@ -135,8 +158,8 @@ static void bma421_work_cb(struct k_work *work)
 #endif
 
 int bma421_trigger_set(struct device *dev,
-		       const struct sensor_trigger *trig,
-		       sensor_trigger_handler_t handler)
+			   const struct sensor_trigger *trig,
+			   sensor_trigger_handler_t handler)
 {
 	struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
@@ -202,23 +225,18 @@ int bma421_init_interrupt(struct device *dev)
 	struct bma421_data *drv_data = dev->data;
 
 	/* set latched interrupts */
-	if (i2c_reg_write_byte(drv_data->i2c, cfg->i2c_addr,
-			       BMA421_REG_INT_LATCH,
-			       BMA421_INT_MODE_LATCH) < 0) {
-		LOG_ERR("Could not set latched interrupts");
-		return -EIO;
-	}
+
 
 	/* setup data ready gpio interrupt */
 	drv_data->gpio = device_get_binding(cfg->drdy_controller);
 	if (drv_data->gpio == NULL) {
 		LOG_ERR("Cannot get pointer to %s device",
-		    cfg->drdy_controller);
+			cfg->drdy_controller);
 		return -EINVAL;
 	}
 
 	gpio_pin_configure(drv_data->gpio, cfg->drdy_pin,
-		GPIO_INPUT | cfg->drdy_flags);
+		GPIO_INPUT | GPIO_PULL_UP | GPIO_INT_EDGE_FALLING | cfg->drdy_flags);
 
 	gpio_init_callback(&drv_data->gpio_cb,
 			bma421_gpio_callback,
@@ -274,8 +292,6 @@ int bma421_init_interrupt(struct device *dev)
 	drv_data->work.handler = bma421_work_cb;
 	drv_data->dev = dev;
 #endif
-
-//	gpio_pin_enable_callback(drv_data->gpio, CONFIG_BMA421_GPIO_PIN_NUM);
 
 	return 0;
 }
