@@ -7,9 +7,10 @@ https://wiki.pine64.org/index.php/PineTime
 # build
 ```
 cd pinetime/app
-west build -b pinetime_dev0 .
+west build -p auto -b pinetime_dev0 .
 ```
 # flash
+```
 west flash
-
+```
 contribution is welcome!
