@@ -13,4 +13,5 @@ west build -p auto -b pinetime_dev0 .
 ```
 west flash
 ```
-contribution is welcome!
+
+bugs and features is tracked by *Issues*, contribution is welcome!
