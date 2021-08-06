@@ -17,6 +17,7 @@
 #define BMA421_CHIP_ID		0x11
 #endif
 
+extern struct bma4_dev bma;
 #define BMA421_REG_ERROR                0x02
 #define BMA421_REG_STATUS               0x03
 #define BMA421_REG_ACC_DATA0            0x0A
@@ -123,6 +124,10 @@
 
 #define BMA4_ACCEL_PERFMODE_MSK     0x80
 #define BMA4_ACCEL_PERFMODE_DATA    0x80
+
+#define BMA4_INTR1_MAP              0x00
+
+#define BMA421_INT_MODE_LATCH     0x01 //permanent latched
 
 #define BMA421_THREAD_PRIORITY          10
 #define BMA421_THREAD_STACKSIZE_UNIT    1024
