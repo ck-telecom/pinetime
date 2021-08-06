@@ -1,0 +1,3 @@
+[submodule "app/drivers/bma421/zephyr/bma4"]
+	path = app/drivers/bma421/zephyr/bma4
+	url = https://github.com/BoschSensortec/BMA423-Sensor-API.git
