@@ -166,6 +166,9 @@ int bma421_init_driver(const struct device *dev)
 	bma_dev->delay_us = user_delay;
 	bma_dev->read_write_len = 8;
 
+	// BMA421 only supports 12-bits values
+	bma_dev->resolution = BMA4_12_BIT_RESOLUTION;
+
 	ret = bma4_soft_reset(bma_dev);
 	if (ret != BMA4_OK) {
 		LOG_ERR("BMA4 soft reset error:%d", ret);
@@ -175,10 +178,9 @@ int bma421_init_driver(const struct device *dev)
 
 	ret = bma421_init(bma_dev);
 	if (ret != BMA4_OK) {
-	LOG_ERR("BMA4 init error:%d", ret);
+		LOG_ERR("BMA4 init error:%d", ret);
 		return ret;
-    }
-
+	}
 
 	ret = bma4_set_accel_enable(1, bma_dev);
 	if (ret != BMA4_OK)
@@ -193,13 +195,22 @@ int bma421_init_driver(const struct device *dev)
 	if (ret != BMA4_OK)
 		return ret;
 
+	ret = bma4_set_advance_power_save(BMA4_ENABLE, bma_dev);
+	if (ret) {
+		LOG_ERR("cannot activate power save state err %d", ret);
+		return ret;
+	}
+
+	uint8_t status = 0xFF;
+	ret = bma4_read_regs(BMA4_INTERNAL_STAT, &status, 1, bma_dev);
+
 #ifdef CONFIG_BMA421_TRIGGER
 	if (bma421_init_interrupt(dev) < 0) {
 		LOG_DBG("Could not initialize interrupts");
 		return -EIO;
 	}
 #endif
-    LOG_INF("bma421 init done");
+	LOG_INF("bma421 init done");
 	return 0;
 }
 

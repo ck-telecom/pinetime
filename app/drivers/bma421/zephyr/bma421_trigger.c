@@ -48,8 +48,7 @@ int bma421_attr_set(const struct device *dev,
 static void bma421_gpio_callback(const struct device *dev,
 				 struct gpio_callback *cb, uint32_t pins)
 {
-	struct bma421_data *drv_data =
-		CONTAINER_OF(cb, struct bma421_data, gpio_cb);
+	struct bma421_data *drv_data = dev->data;
 
 	ARG_UNUSED(pins);
 
@@ -68,7 +67,7 @@ static void bma421_thread_cb(void *arg)
 
 	uint16_t int_status = 0xffffu;
 	bma421_read_int_status(&int_status, bma_dev);
-
+LOG_INF("int status:0x%x", int_status);
 
 	/* check for data ready */
 	if (((int_status & BMA4_ACCEL_DATA_RDY_INT) == BMA4_ACCEL_DATA_RDY_INT)
@@ -114,58 +113,45 @@ int bma421_trigger_set(const struct device *dev,
 {
 	struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
+	struct bma4_dev *bma_dev = &drv_data->bma_dev;
+	int8_t ret;
+	uint16_t interrupt_mask = 0;
+	uint8_t interrupt_enable = BMA4_ENABLE;
 
-	if (trig->type == SENSOR_TRIG_DATA_READY) {
-		/* disable data ready interrupt while changing trigger params */
-/*		if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
-					BMA421_REG_INT_CONFIG0,
-					BMA421_BIT_DATA_EN, 0) < 0) {
-			LOG_DBG("Could not disable data ready interrupt");
-			return -EIO;
-		}
-*/
+	if (handler == NULL) {
+		interrupt_enable = BMA4_DISABLE;
+	}
+
+	switch (trig->type) {
+	case SENSOR_TRIG_DATA_READY:
+		interrupt_mask = BMA4_DATA_RDY_INT;
 		drv_data->data_ready_handler = handler;
-		if (handler == NULL) {
-			return 0;
-		}
 		drv_data->data_ready_trigger = *trig;
-
-		/* enable data ready interrupt */
-#if 0
-		if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
-					BMA421_REG_INT_CONFIG0,
-					BMA421_BIT_DATA_EN,
-					BMA421_BIT_DATA_EN) < 0) {
-			LOG_DBG("Could not enable data ready interrupt");
-			return -EIO;
-		}
-#endif
-	} else if (trig->type == SENSOR_TRIG_DELTA) {
-		/* disable any-motion interrupt while changing trigger params */
-		/*if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
-					BMA421_REG_INT1_MAP,
-					BMA421_INT_MAP_MOTION, 0) < 0) {
-			LOG_ERR("Could not disable data ready interrupt");
-			return -EIO;
-		}*/
-
-		drv_data->any_motion_handler = handler;
-		if (handler == NULL) {
-			return 0;
-		}
-		drv_data->any_motion_trigger = *trig;
-
-		/* enable any-motion interrupt */
-		/*if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
-					BMA421_REG_INT1_MAP,
-					BMA421_INT_MAP_MOTION,
-					BMA421_INT_MAP_MOTION) < 0) {
-			LOG_ERR("Could not enable data ready interrupt");
-			return -EIO;
-		}*/
-	} else {
+		break;
+	default:
+		LOG_ERR("Unsupported sensor trigger");
 		return -ENOTSUP;
 	}
+
+	// Add Error interrupt in any case.
+	interrupt_mask |= BMA421_ERROR_INT;
+
+	ret = bma421_map_interrupt(BMA4_INTR1_MAP, interrupt_mask, interrupt_enable, bma_dev);
+	if (ret) {
+		LOG_ERR("Map interrupt failed err %d", ret);
+	}
+
+	uint16_t int_status = 0xffffu;
+	bma421_read_int_status(&int_status, bma_dev);
+	LOG_WRN("Reading Interrupt status 0x%x", int_status);
+
+	ret = bma4_set_accel_enable(BMA4_ENABLE, bma_dev);
+	if (ret) {
+		LOG_ERR("Accel enable failed err %d", ret);
+	}
+
+	gpio_pin_configure(drv_data->gpio, cfg->drdy_pin,
+		GPIO_INPUT | GPIO_PULL_UP | GPIO_INT_EDGE_FALLING | GPIO_ACTIVE_LOW | cfg->drdy_flags);
 
 	return 0;
 }
