@@ -12,21 +12,12 @@
 #include <sys/__assert.h>
 #include <logging/log.h>
 
-#include "bma4/bma4_defs.h"
-#include "bma4/bma423.h"
+#include "bma4.h"
+#include "bma421_features.h"
+
 #include "bma421.h"
 
-struct bma4_dev bma;
-
 LOG_MODULE_REGISTER(BMA421, CONFIG_SENSOR_LOG_LEVEL);
-
-static int bma421_soft_reset(struct device *dev)
-{
-	const struct bma421_config *cfg = dev->config;
-	struct bma421_data *drv_data = dev->data;
-
-	return i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr, BMA421_REG_CMD, BMA421_CMD_SOFT_RESET_MASK, BMA421_CMD_SOFT_RESET);
-}
 
 static int8_t user_i2c_read(uint8_t reg_addr, uint8_t* reg_data, uint32_t length, void* intf_ptr)
 {
@@ -53,7 +44,7 @@ static void user_delay(uint32_t period_us, void* intf_ptr)
 	k_busy_wait(period_us);
 }
 
-static int bma421_sample_fetch(struct device *dev, enum sensor_channel chan)
+static int bma421_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
 	const struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
@@ -63,15 +54,7 @@ static int bma421_sample_fetch(struct device *dev, enum sensor_channel chan)
 
 	__ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL);
 
-	/*
-	 * since all accel data register addresses are consecutive,
-	 * a burst read can be used to read all the samples
-	 */
-	if (i2c_burst_read(drv_data->i2c, cfg->i2c_addr,
-				BMA421_REG_ACC_DATA8, buf, 6) < 0) {
-		LOG_ERR("Could not read accel axis data");
-		return -EIO;
-	}
+
 
 	msb = buf[1];
 	lsb = buf[0];
@@ -119,7 +102,7 @@ static void bma421_channel_value_add(struct sensor_value *val)
 	val->val2 = 88;
 }
 
-static int bma421_channel_get(struct device *dev,
+static int bma421_channel_get(const struct device *dev,
 		enum sensor_channel chan,
 		struct sensor_value *val)
 {
@@ -161,10 +144,11 @@ static const struct sensor_driver_api bma421_driver_api = {
 	.channel_get = bma421_channel_get,
 };
 
-int bma421_init(struct device *dev)
+int bma421_init_driver(const struct device *dev)
 {
 	const struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
+	struct bma4_dev *bma_dev = &drv_data->bma_dev;
 	int8_t ret = 0;
     uint8_t id = 0;
 	drv_data->i2c = device_get_binding(cfg->i2c_bus);
@@ -174,60 +158,29 @@ int bma421_init(struct device *dev)
 		return -EINVAL;
 	}
 
-	/* read device ID */
-	if (i2c_reg_read_byte(drv_data->i2c, cfg->i2c_addr,
-				BMA421_REG_CHIP_ID, &id) < 0) {
-		LOG_ERR("Could not read chip id");
-		return -EIO;
-	}
-	LOG_INF("id = 0x%x", id);
-	if (id != BMA421_CHIP_ID) {
-		LOG_ERR("Unexpected chip id (%x)", id);
-		return -EIO;
-	}
+	bma_dev->intf = BMA4_I2C_INTF;
+	bma_dev->bus_read = user_i2c_read;
+	bma_dev->bus_write = user_i2c_write;
+	bma_dev->variant = BMA42X_VARIANT;
+	bma_dev->intf_ptr = dev;
+	bma_dev->delay_us = user_delay;
+	bma_dev->read_write_len = 8;
 
-	bma.intf = BMA4_I2C_INTF;
-	bma.bus_read = user_i2c_read;
-	bma.bus_write = user_i2c_write;
-	bma.variant = BMA42X_VARIANT;
-	bma.intf_ptr = dev;
-	bma.delay_us = user_delay;
-	bma.read_write_len = 8;
-
-	ret = bma4_soft_reset(&bma);
+	ret = bma4_soft_reset(bma_dev);
 	if (ret != BMA4_OK) {
 		LOG_ERR("BMA4 soft reset error:%d", ret);
 		return ret;
 	}
-k_busy_wait(1000);
+	k_busy_wait(1000);
 
-	ret = bma4_init(&bma);
+	ret = bma421_init(bma_dev);
 	if (ret != BMA4_OK) {
-        LOG_ERR("BMA4 init error:%d", ret);
-	    return ret;
+	LOG_ERR("BMA4 init error:%d", ret);
+		return ret;
     }
 
-/*
-	ret = bma4_write_config_file(&bma);
-	if (ret != BMA4_OK) {
-        LOG_ERR("BMA4 write config file error:%d", ret);
-		return ret;
-    }
-*/
-	ret = bma4_set_interrupt_mode(BMA4_LATCH_MODE, &bma);
-	if (ret != BMA4_OK) {
-		LOG_ERR("BMA4 set interrupt mode error:%d", ret);
-		return ret;
-	}
-/*	ret = bma423_feature_enable(BMA423_STEP_CNTR, 1, &bma);
-	if (ret != BMA4_OK)
-		return ret;
 
-	ret = bma4_step_detector_enable(0, &bma);
-	if (ret != BMA4_OK)
-		return ret;
-*/
-	ret = bma4_set_accel_enable(1, &bma);
+	ret = bma4_set_accel_enable(1, bma_dev);
 	if (ret != BMA4_OK)
 		return ret;
 
@@ -236,7 +189,7 @@ k_busy_wait(1000);
 	accel_conf.range = BMA4_ACCEL_RANGE_2G;
 	accel_conf.bandwidth = BMA4_ACCEL_NORMAL_AVG4;
 	accel_conf.perf_mode = BMA4_CONTINUOUS_MODE;
-	ret = bma4_set_accel_config(&accel_conf, &bma);
+	ret = bma4_set_accel_config(&accel_conf, bma_dev);
 	if (ret != BMA4_OK)
 		return ret;
 
@@ -262,6 +215,6 @@ static const struct bma421_config bma421_cfg = {
 #endif
 };
 
-DEVICE_DT_INST_DEFINE(0, bma421_init, NULL,
+DEVICE_DT_INST_DEFINE(0, bma421_init_driver, NULL,
 			&bma421_driver, &bma421_cfg, POST_KERNEL,
 			CONFIG_SENSOR_INIT_PRIORITY, &bma421_driver_api);

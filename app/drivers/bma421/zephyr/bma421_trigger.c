@@ -13,20 +13,19 @@
 #include <stdbool.h>
 
 #include "bma421.h"
-#include "bma4/bma4.h"
-#include "bma4/bma423.h"
+
+#include "bma421_features.h"
 
 LOG_MODULE_DECLARE(BMA421, CONFIG_SENSOR_LOG_LEVEL);
 
-
-int bma421_attr_set(struct device *dev,
+int bma421_attr_set(const struct device *dev,
 			enum sensor_channel chan,
 			enum sensor_attribute attr,
 			const struct sensor_value *val)
 {
 	struct bma421_data *drv_data = dev->data;
 	uint64_t slope_th;
-uint8_t buf[BMA421_FEATURE_SIZE];
+//uint8_t buf[BMA421_FEATURE_SIZE];
 //default anymotion is selected
 //todo set any parameter eg stepcounter, tap double tap, wrist tilt etc
 // if (i2c_burst_read(drv_data->i2c, BMA421_I2C_ADDRESS, BMA421_REG_FEATURE, buf, BMA421_FEATURE_SIZE) < 0) {}
@@ -54,8 +53,6 @@ static void bma421_gpio_callback(const struct device *dev,
 
 	ARG_UNUSED(pins);
 
-//	gpio_pin_disable_callback(dev, CONFIG_BMA421_GPIO_PIN_NUM);
-
 #if defined(CONFIG_BMA421_TRIGGER_OWN_THREAD)
 	k_sem_give(&drv_data->gpio_sem);
 #elif defined(CONFIG_BMA421_TRIGGER_GLOBAL_THREAD)
@@ -67,33 +64,23 @@ static void bma421_thread_cb(void *arg)
 {
 	struct device *dev = arg;
 	struct bma421_data *drv_data = dev->data;
-	uint8_t status = 0U;
-	int err = 0;
+	struct bma4_dev *bma_dev = &drv_data->bma_dev;
+
+	uint16_t int_status = 0xffffu;
+	bma421_read_int_status(&int_status, bma_dev);
+
 
 	/* check for data ready */
-/*	err = i2c_reg_read_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
-				BMA421_REG_INT_STATUS_1, &status);
-	if (status & BMA421_BIT_DATA_INT_STATUS &&
-		drv_data->data_ready_handler != NULL &&
-		err == 0) {
-		drv_data->data_ready_handler(dev,
-						 &drv_data->data_ready_trigger);
+	if (((int_status & BMA4_ACCEL_DATA_RDY_INT) == BMA4_ACCEL_DATA_RDY_INT)
+		&& drv_data->data_ready_handler != NULL) {
+		drv_data->data_ready_handler(dev, &drv_data->data_ready_trigger);
 	}
-*/
-	/* check for any motion */
-		/* clear latched interrupt -- according this is already done by reading the register*/
-/*		err = i2c_reg_update_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
-					  BMA421_REG_INT_RST_LATCH,
-					  BMA421_BIT_INT_LATCH_RESET,
-					  BMA421_BIT_INT_LATCH_RESET);
 
-		if (err < 0) {
-			LOG_DBG("Could not update clear the interrupt");
-			return;
-		}*/
-
-
-//	gpio_pin_enable_callback(drv_data->gpio, CONFIG_BMA421_GPIO_PIN_NUM);
+	/* check for any error */
+	if (((int_status & BMA421_ERROR_INT) == BMA421_ERROR_INT)) {
+		LOG_ERR("Interrupt status 0x%x - Error detected!", int_status);
+		// TODO: Handle error (maybe soft reset ?)
+	}
 }
 
 #ifdef CONFIG_BMA421_TRIGGER_OWN_THREAD
@@ -121,9 +108,9 @@ static void bma421_work_cb(struct k_work *work)
 }
 #endif
 
-int bma421_trigger_set(struct device *dev,
-			   const struct sensor_trigger *trig,
-			   sensor_trigger_handler_t handler)
+int bma421_trigger_set(const struct device *dev,
+			const struct sensor_trigger *trig,
+			sensor_trigger_handler_t handler)
 {
 	struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
@@ -183,19 +170,22 @@ int bma421_trigger_set(struct device *dev,
 	return 0;
 }
 
-int bma421_init_interrupt(struct device *dev)
+int bma421_init_interrupt(const struct device *dev)
 {
 	const struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
+	struct bma4_dev *bma_dev = &drv_data->bma_dev;
+	int8_t ret;
 
 	/* set latched interrupts */
+#if 0
 	if (i2c_reg_write_byte(drv_data->i2c, cfg->i2c_addr,
 			       BMA421_REG_INTR_LATCH,
 			       BMA421_INT_MODE_LATCH) < 0) {
 		LOG_ERR("Could not set latched interrupts");
 		return -EIO;
 	}
-
+#endif
 	/* setup data ready gpio interrupt */
 	drv_data->gpio = device_get_binding(cfg->drdy_controller);
 	if (drv_data->gpio == NULL) {
@@ -215,49 +205,31 @@ int bma421_init_interrupt(struct device *dev)
 		LOG_ERR("Could not set gpio callback");
 		return -EIO;
 	}
-#if 0
-	/* map data ready interrupt to INT1 */
-	if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
-				BMA421_REG_INT_MAP_1,
-				BMA421_INT_MAP_1_BIT_DATA,
-				BMA421_INT_MAP_1_BIT_DATA) < 0) {
-		LOG_DBG("Could not map data ready interrupt pin");
-		return -EIO;
+
+	uint16_t int_status = 0xffffu;
+	bma421_read_int_status(&int_status, bma_dev);
+	LOG_WRN("Interrupt status 0x%x", int_status);
+
+	struct bma4_int_pin_config pin_config;
+	bma4_get_int_pin_config(&pin_config, BMA4_INTR1_MAP, bma_dev);
+
+	pin_config.output_en = BMA4_OUTPUT_ENABLE;
+	pin_config.od = BMA4_OPEN_DRAIN;
+	pin_config.lvl = BMA4_ACTIVE_LOW;
+	pin_config.edge_ctrl = BMA4_EDGE_TRIGGER;
+	/* .edge_ctrl and .input_en are for input interrupt configuration */
+
+	ret = bma4_set_int_pin_config(&pin_config, BMA4_INTR1_MAP, bma_dev);
+	if (ret) {
+		LOG_ERR("Set interrupt config err %d", ret);
 	}
 
-	/* map any-motion interrupt to INT1 */
-	if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
-				BMA421_REG_INT1_MAP,
-				BMA421_INT_MAP_MOTION,
-				BMA421_INT_MAP_MOTION) < 0) {
-		LOG_ERR("Could not map any-motion interrupt pin");
-		return -EIO;
-	}
-#endif
-/*	if (i2c_reg_update_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
-				BMA421_REG_INT1_MAP,
-				BMA421_BIT_DATA_EN, 0) < 0) {
-		LOG_DBG("Could not disable data ready interrupt");
-		return -EIO;
-	}
-*/
-	/* disable any-motion interrupt */
-/*	if (i2c_reg_update_byte(drv_data->i2c, BMA421_I2C_ADDRESS,
-				BMA421_REG_INT_EN_0,
-				BMA421_SLOPE_EN_XYZ, 0) < 0) {
-		LOG_DBG("Could not disable data ready interrupt");
-		return -EIO;
-	}
-*/
-struct bma4_int_pin_config int_pin_config;
-int_pin_config.edge_ctrl = BMA4_EDGE_TRIGGER;
-int_pin_config.lvl = BMA4_ACTIVE_LOW;
-int_pin_config.od = BMA4_PUSH_PULL;
-int_pin_config.output_en = BMA4_OUTPUT_ENABLE;
-int_pin_config.input_en = BMA4_INPUT_DISABLE;
+	/* Latch mode means that interrupt flag are only reset once the status is read */
+	bma4_set_interrupt_mode(BMA4_LATCH_MODE, bma_dev);
 
-bma4_set_int_pin_config(&int_pin_config, BMA4_INTR1_MAP, &bma);
-	bma4_map_interrupt(BMA4_INTR1_MAP, 0xFF, 1, &bma);
+	uint8_t bma_status = 0xffu;
+	bma4_get_status(&bma_status, bma_dev);
+
 #if defined(CONFIG_BMA421_TRIGGER_OWN_THREAD)
 	k_sem_init(&drv_data->gpio_sem, 0, UINT_MAX);
 
