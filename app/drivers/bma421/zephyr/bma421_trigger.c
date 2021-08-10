@@ -145,11 +145,6 @@ int bma421_trigger_set(const struct device *dev,
 	bma421_read_int_status(&int_status, bma_dev);
 	LOG_WRN("Reading Interrupt status 0x%x", int_status);
 
-	ret = bma4_set_accel_enable(BMA4_ENABLE, bma_dev);
-	if (ret) {
-		LOG_ERR("Accel enable failed err %d", ret);
-	}
-
 	gpio_pin_configure(drv_data->gpio, cfg->drdy_pin,
 		GPIO_INPUT | GPIO_PULL_UP | GPIO_INT_EDGE_FALLING | GPIO_ACTIVE_LOW | cfg->drdy_flags);
 

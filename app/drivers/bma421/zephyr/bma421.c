@@ -13,7 +13,7 @@
 #include <logging/log.h>
 
 #include "bma4.h"
-#include "bma421_features.h"
+#include "bma421/bma421.h"
 
 #include "bma421.h"
 
@@ -181,10 +181,17 @@ int bma421_init_driver(const struct device *dev)
 		LOG_ERR("BMA4 init error:%d", ret);
 		return ret;
 	}
-
-	ret = bma4_set_accel_enable(1, bma_dev);
-	if (ret != BMA4_OK)
+	ret = bma421_write_config_file(bma_dev);
+	if (ret != BMA4_OK) {
+		LOG_ERR("bma421_write_config_file failed err %d", ret);
 		return ret;
+	}
+
+	ret = bma4_set_accel_enable(BMA4_ENABLE, bma_dev);
+	if (ret != BMA4_OK) {
+		LOG_ERR("Accel enable failed err %d", ret);
+		return ret;
+	}
 
 	struct bma4_accel_config accel_conf;
 	accel_conf.odr = BMA4_OUTPUT_DATA_RATE_100HZ;
@@ -203,6 +210,7 @@ int bma421_init_driver(const struct device *dev)
 
 	uint8_t status = 0xFF;
 	ret = bma4_read_regs(BMA4_INTERNAL_STAT, &status, 1, bma_dev);
+    LOG_INF("internal stat:0x%x", status);
 
 #ifdef CONFIG_BMA421_TRIGGER
 	if (bma421_init_interrupt(dev) < 0) {
