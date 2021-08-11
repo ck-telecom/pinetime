@@ -13,8 +13,7 @@
 #include <stdbool.h>
 
 #include "bma421.h"
-
-#include "bma421_features.h"
+#include "bma421/bma421.h"
 
 LOG_MODULE_DECLARE(BMA421, CONFIG_SENSOR_LOG_LEVEL);
 
@@ -158,15 +157,6 @@ int bma421_init_interrupt(const struct device *dev)
 	struct bma4_dev *bma_dev = &drv_data->bma_dev;
 	int8_t ret;
 
-	/* set latched interrupts */
-#if 0
-	if (i2c_reg_write_byte(drv_data->i2c, cfg->i2c_addr,
-			       BMA421_REG_INTR_LATCH,
-			       BMA421_INT_MODE_LATCH) < 0) {
-		LOG_ERR("Could not set latched interrupts");
-		return -EIO;
-	}
-#endif
 	/* setup data ready gpio interrupt */
 	drv_data->gpio = device_get_binding(cfg->drdy_controller);
 	if (drv_data->gpio == NULL) {
