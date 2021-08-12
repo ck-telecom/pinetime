@@ -15,9 +15,16 @@
 #define DISPLAY_STACK_SIZE      1024
 #define DISPLAY_PRIORITY        5
 
-K_MSGQ_DEFINE(gui_msgq, sizeof(struct msg), 10, 4);
+K_MSGQ_DEFINE(event_msgq, sizeof(struct msg), 10, 4);
 
 LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
+
+int msg_send_gesture(struct msg *m, uint32_t gesture)
+{
+    m->type = MSG_TYPE_GESTURE;
+    m->gesture = gesture;
+    return k_msgq_put(&event_msgq, m, K_NO_WAIT);
+}
 #if 0
 struct gui gui_ctx {
     struct view *active_widget;
@@ -39,12 +46,7 @@ int msg_send_data(struct msg *m, uint32_t type, void *data)
     return k_msgq_put(&gui_msgq, m, K_NO_WAIT);
 }
 
-int msg_send_gesture(struct msg *m, uint32_t gesture)
-{
-    m->type = MSG_TYPE_GESTURE;
-    m->gesture = gesture;
-    return k_msgq_put(&gui_msgq, m, K_NO_WAIT);
-}
+
 
 void widget_active(struct gui *ctx, struct widget *w)
 {
@@ -101,10 +103,11 @@ void gesure_handler(struct gui *ctx, uint32_t gesture)
 }
 #endif
 extern lv_obj_t *screen_home_draw();
+extern lv_obj_t *clock_face_create();
 void display_thread(void* arg1, void *arg2, void *arg3)
 {
     struct msg m;
-    // struct gui *ctx;
+    int ret;
     const struct device *display_dev;
     display_dev = device_get_binding(CONFIG_LVGL_DISPLAY_DEV_NAME);
     if (display_dev == NULL) {
@@ -112,11 +115,16 @@ void display_thread(void* arg1, void *arg2, void *arg3)
         return;
     }
     display_blanking_off(display_dev);
-    lv_obj_t *obj = screen_home_draw();
+    lv_obj_t *obj = clock_face_create();
 
     while (1)
     {
-        k_msgq_get(&gui_msgq, &m, K_MSEC(10)); // 10 ms timeout
+        ret = k_msgq_get(&event_msgq, &m, K_MSEC(10)); // 10 ms timeout
+        if (ret == 0) {
+            if (m.type == MSG_TYPE_GESTURE) {
+                LOG_INF("gesture:%d", m.gesture);
+            }
+        }
 /*       if (m.type == MSG_TYPE_GUI) {
             gui_handler(ctx, &m);
         } else if (m.type == MSG_TYPE_EVT) {
