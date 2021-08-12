@@ -184,13 +184,13 @@ int bma421_init_driver(const struct device *dev)
 		LOG_ERR("BMA4 init error:%d", ret);
 		return ret;
 	}
-
+/*
 	ret = bma421_write_config_file(bma_dev);
 	if (ret != BMA4_OK) {
 		LOG_ERR("bma421_write_config_file failed err %d", ret);
 		return ret;
 	}
-
+*/
 	bma4_set_interrupt_mode(BMA4_LATCH_MODE, bma_dev);
 	if (ret != BMA4_OK) {
 		LOG_ERR("bma4_set_interrupt_mode failed err %d", ret);
