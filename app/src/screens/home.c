@@ -1,20 +1,23 @@
 #include <lvgl.h>
 
+#include "../view.h"
+#include "../service/display.h"
+
+#if 1
 LV_FONT_DECLARE(lv_font_montserrat_32);
 LV_FONT_DECLARE(lv_font_montserrat_48);
 
 lv_point_t status_bar_line[] = { { 0, 30 }, { 239, 30} };
-lv_point_t p1[] = { { 119, 234}, { 119, 239} };
-lv_point_t p2[] = { { 0, 119 }, { 10, 119} };
-lv_point_t p3[] = { { 114, 119 }, { 119, 119} };
 
-lv_style_t style_line;
+static lv_style_t style_line;
 lv_style_t style_font;
 lv_style_t style_time;
 lv_style_t style_date;
 
 lv_obj_t *time_label;
 lv_obj_t *battery_label;
+
+static lv_task_t *task;
 
 static void home_task(lv_task_t *task)
 {
@@ -25,7 +28,19 @@ static void home_task(lv_task_t *task)
     lv_label_set_text(time_label, buffer);
 }
 
-lv_obj_t *screen_home_draw()
+static void roller_callback(lv_obj_t *obj, lv_event_t event)
+{
+
+	if(event == LV_EVENT_CLICKED){
+		//printf("\r\nclick = %d",event);
+		//if(i++ >=6)
+		//	i=0;
+		//lv_roller_set_selected(obj, i, LV_ANIM_OFF);
+	}
+    lv_label_set_text(obj, "Clicked");
+}
+
+int screen_home_draw(struct view *v, lv_obj_t *parent)
 {
 /*    lv_obj_t* bg_clock_img = lv_img_create(lv_scr_act(), NULL);
     lv_img_set_src(bg_clock_img, &bg_clock);
@@ -67,7 +82,32 @@ lv_obj_t *screen_home_draw()
     lv_obj_add_style(date_label, LV_LABEL_PART_MAIN, &style_date);
     lv_label_set_text(date_label, "Jan 1, 1970");
     lv_obj_align(date_label, NULL, LV_ALIGN_CENTER, 0, 30);
+    lv_obj_set_event_cb(date_label, roller_callback);
 
-    lv_task_t *task = lv_task_create(home_task, 500, LV_TASK_PRIO_MID, NULL);
-    return NULL;
+    task = lv_task_create(home_task, 500, LV_TASK_PRIO_MID, NULL);
+    return 0;
 }
+
+int home_exit(struct view *v, lv_obj_t *parent)
+{
+    lv_task_del(task);
+
+    lv_obj_clean(parent);
+
+    return 0;
+}
+
+int home_event(struct view *view, uint32_t event)
+{
+    if (event == 0x02) {
+        view_switch_screen(view, &clocl_face_view);
+    }
+}
+#endif
+
+struct view home = {
+    .id = HOME_ID,
+    .init = screen_home_draw,
+    .event = home_event,
+    .exit = home_exit,
+};

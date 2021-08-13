@@ -21,3 +21,5 @@ target_sources(app PRIVATE src/battery.c)
 target_sources(app PRIVATE src/charger.c)
 target_sources(app PRIVATE src/screens/home.c)
 target_sources(app PRIVATE src/screens/clock_face.c)
+
+target_sources(app PRIVATE src/view.c)

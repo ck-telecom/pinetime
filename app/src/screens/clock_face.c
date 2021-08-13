@@ -4,6 +4,8 @@
 #include <time.h>
 #include <logging/log.h>
 
+#include "../view.h"
+
 LOG_MODULE_REGISTER(clock_face, LOG_LEVEL_INF);
 
 static uint64_t uptime_ms;
@@ -23,6 +25,8 @@ static lv_obj_t *second_body;
 static lv_point_t hour_point[2];
 static lv_point_t minute_point[2];
 static lv_point_t second_point[2];
+
+static lv_task_t *lv_task_clock;
 
 #ifndef PI
 #define PI (3.141592653589793f)
@@ -79,7 +83,7 @@ lv_point_t CoordinateRelocate(int16_t radius, int16_t angle) {
 
 struct gua gua_lines[] = {
     {
-        { { 59, 0 }, { 59+2, 5} } // 11
+        { { 59, 0 }, { 59, 5} } // 11
     },
     {
         { { 119, 0 }, { 119, 5} } // 12
@@ -162,7 +166,7 @@ static void update_clock(struct tm *time)
     lv_line_set_points(second_body, second_point, 2);
 }
 
-lv_obj_t *clock_face_create()
+int clock_face_init(struct view *v, lv_obj_t *parent)
 {
     lv_style_init(&style_line);
     lv_style_init(&hour_line_style);
@@ -184,26 +188,41 @@ lv_obj_t *clock_face_create()
     lv_style_set_line_width(&second_line_style, LV_STATE_DEFAULT, 3);
     lv_style_set_line_color(&second_line_style, LV_STATE_DEFAULT, LV_COLOR_BLUE);
 
-    hour_body = lv_line_create(lv_scr_act(), NULL);
-    minute_body = lv_line_create(lv_scr_act(), NULL);
-    second_body = lv_line_create(lv_scr_act(), NULL);
+    hour_body = lv_line_create(parent, NULL);
+    minute_body = lv_line_create(parent, NULL);
+    second_body = lv_line_create(parent, NULL);
 
     lv_obj_add_style(hour_body, LV_LINE_PART_MAIN, &hour_line_style);
     lv_obj_add_style(minute_body, LV_LINE_PART_MAIN, &minute_line_style);
     lv_obj_add_style(second_body, LV_LINE_PART_MAIN, &second_line_style);
 
     for(int i = 0; i < ARRAY_SIZE(gua_lines); i++) {
-        lv_obj_t *line = lv_line_create(lv_scr_act(), NULL);
+        lv_obj_t *line = lv_line_create(parent, NULL);
         lv_obj_add_style(line, LV_LINE_PART_MAIN, &style_line);
 
         lv_line_set_points(line, (lv_point_t *)&gua_lines[i], 2);
     }
 
-    lv_task_create(home_task, 500, LV_TASK_PRIO_MID, NULL);
-    return NULL;
+    lv_task_clock = lv_task_create(home_task, 500, LV_TASK_PRIO_MID, NULL);
+
+    return 0;
 }
 
-void clock_face_destory()
+int clock_face_exit(struct view *v, lv_obj_t *parent)
+{
+    lv_task_del(lv_task_clock);
+
+    lv_obj_clean(parent);
+}
+
+void clock_face_event_handler()
 {
 
 }
+
+struct view clocl_face_view = {
+    .id = CLOCK_FACE_ID,
+    .name = "clocl_face",
+    .init = clock_face_init,
+    .exit = clock_face_exit,
+};

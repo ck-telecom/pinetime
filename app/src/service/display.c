@@ -11,6 +11,7 @@
 #include <logging/log.h>
 
 #include "display.h"
+#include "../view.h"
 
 #define DISPLAY_STACK_SIZE      1024
 #define DISPLAY_PRIORITY        5
@@ -25,6 +26,15 @@ int msg_send_gesture(struct msg *m, uint32_t gesture)
     m->gesture = gesture;
     return k_msgq_put(&event_msgq, m, K_NO_WAIT);
 }
+
+int msg_send_button(struct msg *m, uint32_t btn_event)
+{
+    m->type = MSG_TYPE_BUTTON;
+    m->event = btn_event;
+    return k_msgq_put(&event_msgq, m, K_NO_WAIT);
+}
+
+static struct view *current_screen;
 #if 0
 struct gui gui_ctx {
     struct view *active_widget;
@@ -32,12 +42,7 @@ struct gui gui_ctx {
 
 
 
-int msg_send_event(struct msg *m, uint32_t event)
-{
-    m->type = MSG_TYPE_EVT;
-    m->event = event;
-    return k_msgq_put(&gui_msgq, m, K_NO_WAIT);
-}
+
 
 int msg_send_data(struct msg *m, uint32_t type, void *data)
 {
@@ -95,15 +100,17 @@ int evt_handler(struct gui *ctx, uint32_t evt)
     return 0;
 }
 
-void gesure_handler(struct gui *ctx, uint32_t gesture)
-{
-    struct widget *w = ctx->active_widget;
-    if (w && w->gui_event)
-        w->gui_event(w, gesture);
-}
+
 #endif
+
+void display_gesure_handler(uint32_t gesture)
+{
+    if (current_screen->event)
+        current_screen->event(current_screen, gesture);
+}
+
 extern lv_obj_t *screen_home_draw();
-extern lv_obj_t *clock_face_create();
+extern lv_obj_t *clock_face_create(lv_obj_t *p);
 void display_thread(void* arg1, void *arg2, void *arg3)
 {
     struct msg m;
@@ -115,14 +122,16 @@ void display_thread(void* arg1, void *arg2, void *arg3)
         return;
     }
     display_blanking_off(display_dev);
-    lv_obj_t *obj = clock_face_create();
 
+current_screen = &home;
+view_init(current_screen, lv_scr_act());
     while (1)
     {
         ret = k_msgq_get(&event_msgq, &m, K_MSEC(10)); // 10 ms timeout
         if (ret == 0) {
             if (m.type == MSG_TYPE_GESTURE) {
                 LOG_INF("gesture:%d", m.gesture);
+                display_gesure_handler(m.gesture);
             }
         }
 /*       if (m.type == MSG_TYPE_GUI) {
