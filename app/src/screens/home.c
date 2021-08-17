@@ -55,11 +55,14 @@ int screen_home_draw(struct view *v, lv_obj_t *parent)
     lv_style_set_line_color(&style_line, LV_STATE_DEFAULT, LV_COLOR_BLACK);
     lv_style_set_line_rounded(&style_line, LV_STATE_DEFAULT, true);
 
-	lv_style_set_text_font(&style_time, LV_STATE_DEFAULT, &lv_font_montserrat_48);
-	lv_style_set_text_color(&style_time, LV_STATE_DEFAULT, LV_COLOR_BLUE);
+    lv_style_set_text_font(&style_time, LV_STATE_DEFAULT, &lv_font_montserrat_48);
+    lv_style_set_text_color(&style_time, LV_STATE_DEFAULT, LV_COLOR_BLUE);
 
-	lv_style_set_text_font(&style_date, LV_STATE_DEFAULT, &lv_font_montserrat_32);
-	lv_style_set_text_color(&style_date, LV_STATE_DEFAULT, LV_COLOR_GREEN);
+    lv_style_set_text_font(&style_date, LV_STATE_DEFAULT, &lv_font_montserrat_32);
+    lv_style_set_text_color(&style_date, LV_STATE_DEFAULT, LV_COLOR_GREEN);
+
+    lv_style_set_text_font(&style_font, LV_STATE_DEFAULT, &lv_font_montserrat_32);
+    lv_style_set_text_color(&style_font, LV_STATE_DEFAULT, LV_COLOR_GREEN);
 
     lv_obj_t *line = lv_line_create(lv_scr_act(), NULL);
     lv_obj_add_style(line, LV_LINE_PART_MAIN, &style_line);
@@ -70,6 +73,7 @@ int screen_home_draw(struct view *v, lv_obj_t *parent)
 //    lv_line_set_points(line, p3, 2);
 
     battery_label = lv_label_create(lv_scr_act(), NULL);
+    lv_obj_add_style(battery_label, LV_LABEL_PART_MAIN, &style_font);
     lv_label_set_text(battery_label, LV_SYMBOL_BATTERY_FULL);
     lv_obj_align(battery_label, NULL, LV_ALIGN_IN_TOP_RIGHT, 0, 0);
 
