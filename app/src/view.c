@@ -1,5 +1,8 @@
+#include <lvgl.h>
+
 #include "view.h"
 
+#if 0
 const char *view_get_label(struct view *v)
 {
 	if (v->label)
@@ -8,13 +11,7 @@ const char *view_get_label(struct view *v)
 	return NULL;
 }
 
-int view_init(struct view *v)
-{
-	if (v->init)
-		return v->init(v);
 
-	return 0;
-}
 
 int view_launch(struct view *v)
 {
@@ -48,13 +45,7 @@ lv_obj_t *view_container(struct view *v)
 	return NULL;
 }
 
-int view_close(struct view *v)
-{
-	if (v->close)
-		return v->close(v);
 
-	return 0;
-}
 
 int widget_face_gui_event(widget_t *widget, int event)
 {
@@ -75,4 +66,27 @@ int widget_face_gui_event(widget_t *widget, int event)
     default:
         break;
     }
+}
+#endif
+int view_init(struct view *v, lv_obj_t *parent)
+{
+	if (v->init)
+		return v->init(v, parent);
+
+	return 0;
+}
+
+int view_exit(struct view *v, lv_obj_t *parent)
+{
+	if (v->exit)
+		return v->exit(v, parent);
+
+	return 0;
+}
+
+void view_switch_screen(struct view *current_screen, struct view *new_screen)
+{
+    view_exit(current_screen, lv_scr_act());
+    current_screen = new_screen;
+    view_init(current_screen, lv_scr_act());
 }
