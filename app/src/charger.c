@@ -24,7 +24,7 @@ int charger_init(const struct device *dev)
         return -ENODEV;
     }
 
-    gpio_pin_configure(charging_dev, CHARGER_PIN, GPIO_INPUT | GPIO_INT_EDGE_FALLING | DT_GPIO_FLAGS(DT_ALIAS(charger), gpios));
+    gpio_pin_configure(charging_dev, CHARGER_PIN, GPIO_INPUT | GPIO_INT_EDGE_FALLING | GPIO_PULL_UP | DT_GPIO_FLAGS(DT_ALIAS(charger), gpios));
     gpio_init_callback(&charging_cb, battery_charging_isr, BIT(CHARGER_PIN));
     gpio_add_callback(charging_dev, &charging_cb);
 }

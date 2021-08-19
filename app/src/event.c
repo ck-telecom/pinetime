@@ -3,7 +3,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
+#include <zephyr.h>
+#include <logging/log.h>
 #include <kernel.h>
 #include "event.h"
 
@@ -11,6 +12,8 @@
 
 #define EVENT_STACK_SIZE 1024
 #define EVENT_PRIORITY 5
+
+LOG_MODULE_REGISTER(event, LOG_LEVEL_INF);
 
 static struct k_poll_signal signal;
 #if 0

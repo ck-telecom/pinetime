@@ -3,6 +3,7 @@
 #include <logging/log.h>
 
 #include "button.h"
+#include "display.h"
 
 #define BUTTON_STACK_SIZE 1024
 #define BUTTON_PRIORITY 5
@@ -20,11 +21,7 @@ LOG_MODULE_REGISTER(button, LOG_LEVEL_INF);
 static const struct device *button_dev;
 static struct k_timer timer_debounce;
 
-static void button_event_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
-{
-    /* start one shot timer that expires after 200 ms */
-    k_timer_start(&timer_debounce, K_MSEC(BTN_DEBOUNCE_TIME), K_NO_WAIT);
-}
+
 K_MSGQ_DEFINE(button_msgq, sizeof(struct msg), 10, 4);
 
 //static sys_slist_t evt_list;
@@ -35,6 +32,18 @@ struct node {
     int (*func)(void *arg);
     //struct sys_slist_t evt_list;
 };
+
+static void button_event_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+    /* start one shot timer that expires after 200 ms */
+    //k_timer_start(&timer_debounce, K_MSEC(BTN_DEBOUNCE_TIME), K_NO_WAIT);
+    struct btn_msg m = { 0 };
+    int state = gpio_pin_get(button_dev, KEY_IN);
+    uint32_t val = (state ? BUTTON_STATE_PRESSED : BUTTON_STATE_RELEASED);
+    printk("pin state:%d\n", state);
+
+    k_msgq_put(&button_msgq, &m, K_NO_WAIT);
+}
 
 static inline int button_is_pressed(uint8_t id)
 {
@@ -56,10 +65,8 @@ static void button_released(struct button_handle *handle)
 {
     uint32_t now = k_uptime_get();
     uint32_t diff = now - handle->press_time;
-    /* check long press timer expired */
-    if (handle->click_config.long_click.handler && handle->state == BUTTON_STATE_LONG) {
-        LOG_INF("button long released");
-    } else if (handle->click_config.single_click.up_handler) {
+
+    if (handle->click_config.single_click.up_handler) {
         LOG_INF("button released");
     }
     handle->repeat_time = 0;
@@ -144,18 +151,12 @@ int button_init(const struct device *dev)
     retval = gpio_pin_configure(button_dev, KEY_IN, GPIO_INPUT | GPIO_INT_EDGE_BOTH | DT_GPIO_FLAGS(DT_ALIAS(sw0), gpios));
     if (retval) {
         LOG_ERR("failed to configure pin %d '%s'\n", KEY_IN, DT_LABEL(DT_ALIAS(sw0)));
+        return retval;
     }
 
     gpio_init_callback(&button_cb, button_event_cb, BIT(KEY_IN));
     gpio_add_callback(button_dev, &button_cb);
-#if 0
-    for (int i = 0; i < NUM_BUTTONS; i++) {
-        handle[i].dev = device_get_binding(handle[i].port);
-        gpio_pin_configure(handle[i].dev, handle[i].pin, GPIO_INPUT | GPIO_INT_EDGE_BOTH/* | PULL_UP*/);
-        gpio_init_callback(&handle[i].button_cb, button_event_cb, BIT(handle[i].pin));
-        gpio_add_callback(&handle[i].dev, &handle[i].button_cb);
-    }
-#endif
+
     LOG_INF("button init done");
     return retval;
 }
@@ -163,7 +164,7 @@ SYS_INIT(button_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 
 static void button_thread()
 {
-    struct msg m;
+    struct btn_msg m;
     uint8_t flag = 0;
     k_timeout_t timeout = K_FOREVER;
     for (; ;) {

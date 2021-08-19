@@ -4,6 +4,7 @@
 #include "../service/display.h"
 
 #if 1
+LV_FONT_DECLARE(lv_font_montserrat_16);
 LV_FONT_DECLARE(lv_font_montserrat_32);
 LV_FONT_DECLARE(lv_font_montserrat_48);
 
@@ -16,6 +17,7 @@ lv_style_t style_date;
 
 lv_obj_t *time_label;
 lv_obj_t *battery_label;
+lv_obj_t *charger_label;
 
 static lv_task_t *task;
 
@@ -61,8 +63,8 @@ int screen_home_draw(struct view *v, lv_obj_t *parent)
     lv_style_set_text_font(&style_date, LV_STATE_DEFAULT, &lv_font_montserrat_32);
     lv_style_set_text_color(&style_date, LV_STATE_DEFAULT, LV_COLOR_GREEN);
 
-    lv_style_set_text_font(&style_font, LV_STATE_DEFAULT, &lv_font_montserrat_32);
-    lv_style_set_text_color(&style_font, LV_STATE_DEFAULT, LV_COLOR_GREEN);
+    lv_style_set_text_font(&style_font, LV_STATE_DEFAULT, &lv_font_montserrat_16);
+    lv_style_set_text_color(&style_font, LV_STATE_DEFAULT, LV_COLOR_WHITE);
 
     lv_obj_t *line = lv_line_create(lv_scr_act(), NULL);
     lv_obj_add_style(line, LV_LINE_PART_MAIN, &style_line);
@@ -76,6 +78,11 @@ int screen_home_draw(struct view *v, lv_obj_t *parent)
     lv_obj_add_style(battery_label, LV_LABEL_PART_MAIN, &style_font);
     lv_label_set_text(battery_label, LV_SYMBOL_BATTERY_FULL);
     lv_obj_align(battery_label, NULL, LV_ALIGN_IN_TOP_RIGHT, 0, 0);
+
+    charger_label = lv_label_create(lv_scr_act(), NULL);
+    lv_obj_add_style(charger_label, LV_LABEL_PART_MAIN, &style_font);
+    lv_label_set_text(charger_label, LV_SYMBOL_CHARGE);
+    lv_obj_align(charger_label, NULL, LV_ALIGN_IN_TOP_RIGHT, -30, 0);
 
     time_label = lv_label_create(lv_scr_act(), NULL);
     lv_obj_add_style(time_label, LV_LABEL_PART_MAIN, &style_time);

@@ -45,11 +45,12 @@ struct button_handle {
 	struct click_config click_config;
 };
 
+struct btn_msg {
+    uint32_t val;
+};
+
 typedef struct button_handle button_handle_t;
 
-struct msg {
-	uint32_t val;	
-};
 
 extern struct button_handle button_handle_array[];
 

@@ -109,8 +109,6 @@ void display_gesure_handler(uint32_t gesture)
         current_screen->event(current_screen, gesture);
 }
 
-extern lv_obj_t *screen_home_draw();
-extern lv_obj_t *clock_face_create(lv_obj_t *p);
 void display_thread(void* arg1, void *arg2, void *arg3)
 {
     struct msg m;
