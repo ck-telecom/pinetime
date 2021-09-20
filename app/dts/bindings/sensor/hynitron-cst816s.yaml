@@ -2,7 +2,7 @@
 
 description: This is a representation of the Hynitron,CST816S touchscreen sensor
 
-compatible: "hynitron,cst816s"
+compatible: "hynitron-cst816s"
 
 include: i2c-device.yaml
 
