@@ -40,7 +40,7 @@ static void bma4xx_thread()
 
     while (1) {
         struct bma4_accel data;
-  bma4_read_accel_xyz(&data, &bma);
+        bma4_read_accel_xyz(&data, &dev);
 
   //uint32_t steps = 0;
  // bma4_step_counter_output(&steps, &bma);

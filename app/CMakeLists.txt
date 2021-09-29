@@ -15,6 +15,7 @@ target_sources(app PRIVATE src/service/button_cfg.c)
 target_sources(app PRIVATE src/service/vibrator.c)
 target_sources(app PRIVATE src/service/display.c)
 target_sources(app PRIVATE src/service/touch.c)
+target_sources(app PRIVATE src/service/bma4xx.c)
 
 target_sources(app PRIVATE src/backlight.c)
 target_sources(app PRIVATE src/battery.c)

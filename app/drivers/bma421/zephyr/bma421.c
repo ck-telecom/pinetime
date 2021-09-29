@@ -40,10 +40,10 @@ static int8_t user_i2c_write(uint8_t reg_addr, const uint8_t* reg_data, uint32_t
 	const struct device *dev = intf_ptr;
 	const struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
-	/* nrf52382 i2c burst write bug??? */
+
 	ret = i2c_burst_write(drv_data->i2c, cfg->i2c_addr, reg_addr, reg_data, length);
 	if (ret < 0) {
-		LOG_ERR("i2c_burst_write error");
+		LOG_ERR("i2c_burst_write error %d", ret);
 		return ret;
 	}
 	return 0;
@@ -63,8 +63,6 @@ static int bma421_sample_fetch(const struct device *dev, enum sensor_channel cha
 	uint16_t msb = 0U;
 
 	__ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL);
-
-
 
 	msb = buf[1];
 	lsb = buf[0];
@@ -112,10 +110,6 @@ static int bma421_channel_get(const struct device *dev,
 {
 	struct bma421_data *drv_data = dev->data;
 
-	/*
-	 * See datasheet "Sensor data" section for
-	 * more details on processing sample data.
-	 */
 	if (chan == SENSOR_CHAN_ACCEL_X) {
 		bma421_channel_accel_convert(val, drv_data->x_sample);
 	} else if (chan == SENSOR_CHAN_ACCEL_Y) {
@@ -184,13 +178,13 @@ int bma421_init_driver(const struct device *dev)
 		LOG_ERR("BMA4 init error:%d", ret);
 		return ret;
 	}
-/*
+
 	ret = bma421_write_config_file(bma_dev);
 	if (ret != BMA4_OK) {
 		LOG_ERR("bma421_write_config_file failed err %d", ret);
 		return ret;
 	}
-*/
+
 	bma4_set_interrupt_mode(BMA4_LATCH_MODE, bma_dev);
 	if (ret != BMA4_OK) {
 		LOG_ERR("bma4_set_interrupt_mode failed err %d", ret);
@@ -198,12 +192,16 @@ int bma421_init_driver(const struct device *dev)
 	}
 
 	ret = bma421_feature_enable(BMA421_STEP_CNTR, 1, bma_dev);
-	if (ret != BMA4_OK)
-		return;
+	if (ret != BMA4_OK) {
+		LOG_ERR("bma421_feature_enable failed err %d", ret);
+		return ret;
+	}
 
 	ret = bma421_step_detector_enable(0, bma_dev);
-	if (ret != BMA4_OK)
-		return;
+	if (ret != BMA4_OK) {
+		LOG_ERR("bma421_step_detector_enable failed err %d", ret);
+		return ret;
+	}
 
 	ret = bma4_set_accel_enable(BMA4_ENABLE, bma_dev);
 	if (ret != BMA4_OK) {
