@@ -30,4 +30,4 @@ manifest:
       west-commands: scripts/west-commands.yml
       revision: main
   self:
-    path: app
+    path: pinetime
