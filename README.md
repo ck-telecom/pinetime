@@ -3,6 +3,13 @@
 #### Introduction
 zephyr based PineTime
 
+#### Initialization
+```
+west init -m https://gitee.com/fwatch/pinetime.git --mr develop
+
+cd pinetime && west update
+```
+
 #### Build
 ```
 cd pinetime/app
