@@ -121,9 +121,8 @@ int cst816s_init_interrupt(const struct device *dev)
 		return -EIO;
 	}
 
-	gpio_pin_configure(drv_data->gpio,
-			INTERRUPT_PIN, GPIO_INPUT | GPIO_PULL_UP
-			| GPIO_INT_EDGE_FALLING | GPIO_ACTIVE_LOW);
+	gpio_pin_interrupt_configure(drv_data->gpio,
+			INTERRUPT_PIN, GPIO_INT_EDGE_TO_ACTIVE);
 #endif
 #if defined(CONFIG_CST816S_TRIGGER_OWN_THREAD)
 	k_sem_init(&drv_data->gpio_sem, 0, UINT_MAX);
