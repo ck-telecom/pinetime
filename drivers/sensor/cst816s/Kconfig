@@ -6,7 +6,7 @@
 #	depends on I2C
 #	help
 #	 Enable driver for hynitron touchscreen. 
-menuconfig CST816S
+config CST816S
         bool "CST816S Touchscreen"
         depends on I2C
         help

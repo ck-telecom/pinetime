@@ -4,13 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-menu "Sensor drivers"
-
+if SENSOR
 
 rsource "bma421/Kconfig"
 
-rsource "hrs3300/Kconfig"
+# rsource "hrs3300/Kconfig"
 
 rsource "cst816s/Kconfig"
 
-endmenu
+endif # SENSOR

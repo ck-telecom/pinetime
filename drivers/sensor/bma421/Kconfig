@@ -3,7 +3,7 @@
 # Copyright (c) 2016 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-menuconfig BMA421
+config BMA421
 	bool "BMA421 Three Axis Accelerometer Family"
 	depends on I2C
 	help
