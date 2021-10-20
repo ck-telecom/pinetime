@@ -5,7 +5,7 @@ zephyr based PineTime
 
 #### Initialization
 ```
-west init -m https://gitee.com/fwatch/pinetime.git --mr develop zpilot
+west init -m https://gitee.com/fwatch/pinetime.git --mr develop pinetime
 
 cd pinetime && west update
 ```
