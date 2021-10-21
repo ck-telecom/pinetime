@@ -96,7 +96,7 @@ int touch_init(const struct device *dev)
     const struct device *touch_dev = device_get_binding(TOUCH_DEV);
     if (!touch_dev) {
         LOG_ERR("could get %s device", TOUCH_DEV);
-        return;
+        return -ENODEV;
     }
     if (IS_ENABLED(CONFIG_CST816S_TRIGGER)) {
         struct sensor_trigger trig = {
@@ -105,7 +105,7 @@ int touch_init(const struct device *dev)
         };
         if (sensor_trigger_set(touch_dev, &trig, touch_isr_handler) < 0) {
             LOG_ERR("Cannot configure trigger");
-            return;
+            return -ENOTSUP;
         }
     }
     //lvgl_indev_init();
