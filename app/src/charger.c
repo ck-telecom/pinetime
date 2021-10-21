@@ -7,8 +7,8 @@
 
 LOG_MODULE_REGISTER(CHARGER, LOG_LEVEL_INF);
 
-static const struct device *charger_dev;
-static struct gpio_callback charging_cb;
+static const struct gpio_dt_spec charger = GPIO_DT_SPEC_GET_OR(DT_ALIAS(charger), gpios, {0});
+static struct gpio_callback charger_cb;
 
 static void battery_charging_isr(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
@@ -19,14 +19,16 @@ static void battery_charging_isr(const struct device *dev, struct gpio_callback 
 
 int charger_init(const struct device *dev)
 {
-    charger_dev = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(charger), gpios));
-    if (charger_dev == NULL) {
-        return -ENODEV;
-    }
+    int retval = 0;
 
-    gpio_pin_interrupt_configure(charger_dev, CHARGER_PIN, GPIO_INT_EDGE_BOTH);
-    gpio_init_callback(&charger_dev, battery_charging_isr, BIT(CHARGER_PIN));
-    gpio_add_callback(charger_dev, &charging_cb);
+    gpio_pin_configure_dt(&charger, GPIO_INPUT);
+
+    gpio_pin_interrupt_configure_dt(&charger, GPIO_INT_EDGE_BOTH);
+
+    gpio_init_callback(&charger_cb, battery_charging_isr, BIT(charger.pin));
+    gpio_add_callback(charger.port, &charger_cb);
+
+    return retval;
 }
 
 SYS_INIT(charger_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
