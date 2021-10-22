@@ -97,7 +97,7 @@ static int bma421_sample_fetch(const struct device *dev, enum sensor_channel cha
 	default:
 		return -ENOTSUP;
 	}
-
+LOG_INF("x:%d y:%d z:%d", drv_data->accel.x, drv_data->accel.y, drv_data->accel.z);
 	return retval;
 }
 
@@ -200,16 +200,10 @@ int bma421_init_driver(const struct device *dev)
 		LOG_ERR("BMA4 init error:%d", ret);
 		return ret;
 	}
-
+/*
 	ret = bma421_write_config_file(bma_dev);
 	if (ret != BMA4_OK) {
 		LOG_ERR("bma421_write_config_file failed err %d", ret);
-		return ret;
-	}
-
-	bma4_set_interrupt_mode(BMA4_LATCH_MODE, bma_dev);
-	if (ret != BMA4_OK) {
-		LOG_ERR("bma4_set_interrupt_mode failed err %d", ret);
 		return ret;
 	}
 
@@ -224,32 +218,29 @@ int bma421_init_driver(const struct device *dev)
 		LOG_ERR("bma421_step_detector_enable failed err %d", ret);
 		return ret;
 	}
+*/
+	struct bma4_accel_config accel_conf = { 0 };
+	accel_conf.odr = BMA4_OUTPUT_DATA_RATE_100HZ;
+	accel_conf.range = BMA4_ACCEL_RANGE_2G;
+	accel_conf.bandwidth = BMA4_ACCEL_NORMAL_AVG4;
+	accel_conf.perf_mode = BMA4_CIC_AVG_MODE;
+	ret = bma4_set_accel_config(&accel_conf, bma_dev);
+	if (ret != BMA4_OK) {
+		LOG_ERR("Failed to set Acceleration config err %d", ret);
+		return ret;
+	}
+
+	ret = bma4_set_advance_power_save(BMA4_ENABLE, bma_dev);
+	if (ret) {
+		LOG_ERR("cannot activate power save state err %d", ret);
+		return ret;
+	}
 
 	ret = bma4_set_accel_enable(BMA4_ENABLE, bma_dev);
 	if (ret != BMA4_OK) {
 		LOG_ERR("Accel enable failed err %d", ret);
 		return ret;
 	}
-
-	struct bma4_accel_config accel_conf;
-	accel_conf.odr = BMA4_OUTPUT_DATA_RATE_100HZ;
-	accel_conf.range = BMA4_ACCEL_RANGE_2G;
-	accel_conf.bandwidth = BMA4_ACCEL_NORMAL_AVG4;
-	accel_conf.perf_mode = BMA4_CIC_AVG_MODE;
-	ret = bma4_set_accel_config(&accel_conf, bma_dev);
-	if (ret != BMA4_OK)
-		return ret;
-/*
-	ret = bma4_set_advance_power_save(BMA4_ENABLE, bma_dev);
-	if (ret) {
-		LOG_ERR("cannot activate power save state err %d", ret);
-		return ret;
-	}
-*/
-	uint8_t status = 0xFF;
-	ret = bma4_read_regs(BMA4_INTERNAL_STAT, &status, 1, bma_dev);
-    LOG_INF("internal stat:0x%x", status);
-
 #ifdef CONFIG_BMA421_TRIGGER
 	if (bma421_init_interrupt(dev) < 0) {
 		LOG_DBG("Could not initialize interrupts");
