@@ -17,12 +17,14 @@
 
 LOG_MODULE_DECLARE(BMA421, CONFIG_SENSOR_LOG_LEVEL);
 
+#ifdef CONFIG_BMA421_TRIGGER
+
 int bma421_attr_set(const struct device *dev,
 			enum sensor_channel chan,
 			enum sensor_attribute attr,
 			const struct sensor_value *val)
 {
-	struct bma421_data *drv_data = dev->data;
+//	struct bma421_data *drv_data = dev->data;
 
 //uint8_t buf[BMA421_FEATURE_SIZE];
 //default anymotion is selected
@@ -109,7 +111,7 @@ int bma421_trigger_set(const struct device *dev,
 			const struct sensor_trigger *trig,
 			sensor_trigger_handler_t handler)
 {
-	const struct bma421_config *cfg = dev->config;
+//	const struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
 	struct bma4_dev *bma_dev = &drv_data->bma_dev;
 	int8_t ret;
@@ -137,14 +139,12 @@ int bma421_trigger_set(const struct device *dev,
 	ret = bma421_map_interrupt(BMA4_INTR1_MAP, interrupt_mask, interrupt_enable, bma_dev);
 	if (ret) {
 		LOG_ERR("Map interrupt failed err %d", ret);
+		return ret;
 	}
 
 	uint16_t int_status = 0xffffu;
 	bma421_read_int_status(&int_status, bma_dev);
 	LOG_WRN("Reading Interrupt status 0x%x", int_status);
-
-	gpio_pin_configure(drv_data->gpio, cfg->drdy_pin,
-		GPIO_INPUT | GPIO_PULL_UP | GPIO_INT_EDGE_FALLING | GPIO_ACTIVE_LOW | cfg->drdy_flags);
 
 	return 0;
 }
@@ -164,8 +164,9 @@ int bma421_init_interrupt(const struct device *dev)
 		return -EINVAL;
 	}
 
-	gpio_pin_configure(drv_data->gpio, cfg->drdy_pin,
-		GPIO_INPUT | GPIO_PULL_UP | GPIO_INT_EDGE_FALLING | GPIO_ACTIVE_LOW | cfg->drdy_flags);
+	gpio_pin_configure(drv_data->gpio, cfg->drdy_pin, GPIO_INPUT);
+
+	gpio_pin_interrupt_configure(drv_data->gpio, cfg->drdy_pin, GPIO_INT_EDGE_TO_INACTIVE);
 
 	gpio_init_callback(&drv_data->gpio_cb,
 			bma421_gpio_callback,
@@ -192,6 +193,7 @@ int bma421_init_interrupt(const struct device *dev)
 	ret = bma4_set_int_pin_config(&pin_config, BMA4_INTR1_MAP, bma_dev);
 	if (ret) {
 		LOG_ERR("Set interrupt config err %d", ret);
+		return ret;
 	}
 
 	/* Latch mode means that interrupt flag are only reset once the status is read */
@@ -215,3 +217,5 @@ int bma421_init_interrupt(const struct device *dev)
 
 	return 0;
 }
+
+#endif

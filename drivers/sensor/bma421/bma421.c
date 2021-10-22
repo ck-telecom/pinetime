@@ -60,34 +60,43 @@ static int bma421_sample_fetch(const struct device *dev, enum sensor_channel cha
 
 	struct bma421_data *drv_data = dev->data;
 	struct bma4_dev *bma_dev = &drv_data->bma_dev;
-	struct bma4_accel accel;
 
-	if (chan == SENSOR_CHAN_ACCEL_XYZ) {
-		retval = bma4_read_accel_xyz(&accel, bma_dev);
+	switch (chan) {
+	case SENSOR_CHAN_ACCEL_X:
+	case SENSOR_CHAN_ACCEL_Y:
+	case SENSOR_CHAN_ACCEL_Z:
+	case SENSOR_CHAN_ACCEL_XYZ:
+		retval = bma4_read_accel_xyz(&drv_data->accel, bma_dev);
 		if (retval < 0) {
 			LOG_ERR("bma4_read_accel_xyz error: %d", retval);
 			return retval;
 		};
-	} else if (chan == SENSOR_CHAN_ALL) {
-		retval = bma4_read_accel_xyz(&accel, bma_dev);
-		if (retval < 0) {
-			LOG_ERR("bma4_read_accel_xyz error: %d", retval);
-			return retval;
-		};
+		break;
+
+	case SENSOR_CHAN_DIE_TEMP:
+		retval = bma4_get_temperature(&drv_data->temperature, BMA4_DEG, bma_dev);
+		break;
+
+	case SENSOR_CHAN_ALL:
+		retval = bma4_read_accel_xyz(&drv_data->accel, bma_dev);
+		retval |= bma4_get_temperature(&drv_data->temperature, BMA4_DEG, bma_dev);
  //uint32_t steps = 0;
- // bma4_step_counter_output(&steps, &bma);
-
+// bma4_step_counter_output(&steps, &bma);
   //int32_t temperature;
   //bma4_get_temperature(&temperature, BMA4_DEG, &bma);
   //temperature = temperature / 1000;
 
   //uint8_t activity = 0;
   //bma423_activity_output(&activity, &bma);
-    }
+		if (retval < 0) {
+			LOG_ERR("bma4_read_accel_xyz error: %d", retval);
+			return retval;
+		}
+		break;
 
-	drv_data->x_sample = accel.x;
-	drv_data->y_sample = accel.y;
-	drv_data->z_sample = accel.z;
+	default:
+		return -ENOTSUP;
+	}
 
 	return retval;
 }
@@ -124,20 +133,20 @@ static int bma421_channel_get(const struct device *dev,
 	struct bma421_data *drv_data = dev->data;
 
 	if (chan == SENSOR_CHAN_ACCEL_X) {
-		bma421_channel_accel_convert(val, drv_data->x_sample);
+		bma421_channel_accel_convert(val, drv_data->accel.x);
 	} else if (chan == SENSOR_CHAN_ACCEL_Y) {
-		bma421_channel_accel_convert(val, drv_data->y_sample);
+		bma421_channel_accel_convert(val, drv_data->accel.y);
 	} else if (chan == SENSOR_CHAN_ACCEL_Z) {
-		bma421_channel_accel_convert(val, drv_data->z_sample);
+		bma421_channel_accel_convert(val, drv_data->accel.z);
 	} else if (chan == SENSOR_CHAN_ACCEL_XYZ) {
-		bma421_channel_accel_convert(val, drv_data->x_sample);
-		bma421_channel_accel_convert(val + 1, drv_data->y_sample);
-		bma421_channel_accel_convert(val + 2, drv_data->z_sample);
+		bma421_channel_accel_convert(val, drv_data->accel.x);
+		bma421_channel_accel_convert(val + 1, drv_data->accel.y);
+		bma421_channel_accel_convert(val + 2, drv_data->accel.z);
 		bma421_channel_value_add(val + 3); //todo check how extra data can be passed
 	} else if (chan == SENSOR_CHAN_DIE_TEMP) {
 		/* temperature_val = 23 + sample / 2 */
-		val->val1 = (drv_data->temp_sample >> 1) + 23;
-		val->val2 = 500000 * (drv_data->temp_sample & 1);
+		val->val1 = (drv_data->temperature >> 1) + 23;
+		val->val2 = 500000 * (drv_data->temperature & 1);
 		return 0;
 	} else {
 		return -ENOTSUP;
@@ -175,7 +184,7 @@ int bma421_init_driver(const struct device *dev)
 	bma_dev->bus_read = user_i2c_read;
 	bma_dev->bus_write = user_i2c_write;
 	bma_dev->variant = BMA42X_VARIANT;
-	bma_dev->intf_ptr = dev;
+	bma_dev->intf_ptr = (void *)dev;
 	bma_dev->delay_us = user_delay;
 	bma_dev->read_write_len = 16;
 

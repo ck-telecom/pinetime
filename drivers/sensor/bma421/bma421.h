@@ -64,10 +64,8 @@
 
 struct bma421_data {
 	const struct device *i2c;
-	uint16_t x_sample;
-	uint16_t y_sample;
-	uint16_t z_sample;
-	uint8_t temp_sample;
+	struct bma4_accel accel;
+	int32_t temperature;
 	struct bma4_dev bma_dev;
 #ifdef CONFIG_BMA421_TRIGGER
 	const struct device *gpio;
