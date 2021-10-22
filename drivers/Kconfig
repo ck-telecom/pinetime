@@ -2,4 +2,5 @@
 
 menu "Drivers"
 rsource "sensor/Kconfig"
+rsource "eeprom/Kconfig"
 endmenu
