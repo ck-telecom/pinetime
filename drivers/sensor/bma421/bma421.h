@@ -63,7 +63,7 @@
 #define BMA421_THREAD_STACKSIZE_UNIT    1024
 
 struct bma421_data {
-	struct device *i2c;
+	const struct device *i2c;
 	uint16_t x_sample;
 	uint16_t y_sample;
 	uint16_t z_sample;
@@ -85,7 +85,7 @@ struct bma421_data {
 	struct k_sem gpio_sem;
 #elif defined(CONFIG_BMA421_TRIGGER_GLOBAL_THREAD)
 	struct k_work work;
-	struct device *dev;
+	const struct device *dev;
 #endif
 
 #endif /* CONFIG_BMA421_TRIGGER */

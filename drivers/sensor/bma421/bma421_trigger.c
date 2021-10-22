@@ -23,7 +23,7 @@ int bma421_attr_set(const struct device *dev,
 			const struct sensor_value *val)
 {
 	struct bma421_data *drv_data = dev->data;
-	uint64_t slope_th;
+
 //uint8_t buf[BMA421_FEATURE_SIZE];
 //default anymotion is selected
 //todo set any parameter eg stepcounter, tap double tap, wrist tilt etc
@@ -58,9 +58,8 @@ static void bma421_gpio_callback(const struct device *dev,
 #endif
 }
 
-static void bma421_thread_cb(void *arg)
+static void bma421_thread_cb(const struct device *dev)
 {
-	struct device *dev = arg;
 	struct bma421_data *drv_data = dev->data;
 	struct bma4_dev *bma_dev = &drv_data->bma_dev;
 
@@ -110,7 +109,7 @@ int bma421_trigger_set(const struct device *dev,
 			const struct sensor_trigger *trig,
 			sensor_trigger_handler_t handler)
 {
-	struct bma421_config *cfg = dev->config;
+	const struct bma421_config *cfg = dev->config;
 	struct bma421_data *drv_data = dev->data;
 	struct bma4_dev *bma_dev = &drv_data->bma_dev;
 	int8_t ret;

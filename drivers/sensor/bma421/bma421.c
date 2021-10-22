@@ -56,27 +56,40 @@ static void user_delay(uint32_t period_us, void* intf_ptr)
 
 static int bma421_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
-	const struct bma421_config *cfg = dev->config;
+	int retval = 0;
+
 	struct bma421_data *drv_data = dev->data;
-	uint8_t buf[6] = { 0 };
-	uint16_t lsb = 0U;
-	uint16_t msb = 0U;
+	struct bma4_dev *bma_dev = &drv_data->bma_dev;
+	struct bma4_accel accel;
 
-	__ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL);
+	if (chan == SENSOR_CHAN_ACCEL_XYZ) {
+		retval = bma4_read_accel_xyz(&accel, bma_dev);
+		if (retval < 0) {
+			LOG_ERR("bma4_read_accel_xyz error: %d", retval);
+			return retval;
+		};
+	} else if (chan == SENSOR_CHAN_ALL) {
+		retval = bma4_read_accel_xyz(&accel, bma_dev);
+		if (retval < 0) {
+			LOG_ERR("bma4_read_accel_xyz error: %d", retval);
+			return retval;
+		};
+ //uint32_t steps = 0;
+ // bma4_step_counter_output(&steps, &bma);
 
-	msb = buf[1];
-	lsb = buf[0];
-	drv_data->x_sample = (uint16_t)(msb << 8) | lsb;
+  //int32_t temperature;
+  //bma4_get_temperature(&temperature, BMA4_DEG, &bma);
+  //temperature = temperature / 1000;
 
-	msb = buf[3];
-	lsb = buf[2];
-	drv_data->y_sample = (uint16_t)(msb << 8) | lsb;
+  //uint8_t activity = 0;
+  //bma423_activity_output(&activity, &bma);
+    }
 
-	msb = buf[5];
-	lsb = buf[4];
-	drv_data->z_sample = (uint16_t)(msb << 8) | lsb;
+	drv_data->x_sample = accel.x;
+	drv_data->y_sample = accel.y;
+	drv_data->z_sample = accel.z;
 
-	return 0;
+	return retval;
 }
 
 static void bma421_channel_accel_convert(struct sensor_value *val,
