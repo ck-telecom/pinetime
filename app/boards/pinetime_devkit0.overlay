@@ -22,6 +22,12 @@
 	};
 };
 
+&mx25l {
+	compatible = "mxicy,cmos-mx25l", "jedec,spi-nor";
+	jedec-id = [0b 40 16];
+	size = <0x3200000>;
+};
+
 &pwm0 {
 	status = "okay";
 	ch0-pin = <16>;
