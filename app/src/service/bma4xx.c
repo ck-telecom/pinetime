@@ -10,6 +10,7 @@
 
 LOG_MODULE_REGISTER(bma4xx, LOG_LEVEL_INF);
 
+#ifdef CONFIG_BMA421_TRIGGER
 static void bma421_handler(const struct device *dev,
 			   struct sensor_trigger *trig)
 {
@@ -26,9 +27,11 @@ static void bma421_handler(const struct device *dev,
     }
     LOG_INF("bma421 handler");
 }
+#endif
 
 static void bma4xx_thread()
 {
+
     const struct device *dev = device_get_binding("BMA421");
     if (dev == NULL) {
         LOG_ERR("could not get BMA421 device");
@@ -47,8 +50,17 @@ static void bma4xx_thread()
     }
 
     while (1) {
+        struct sensor_value accel_data[3] = { 0 };
 
-
+        if (sensor_sample_fetch(dev) < 0) {
+            LOG_ERR("sensor_sample_fetch error");
+        }
+        if (sensor_channel_get(dev, SENSOR_CHAN_ACCEL_XYZ, accel_data) < 0) {
+            LOG_ERR("sensor_channel_get error");
+        }
+        LOG_INF("sensor_channel_get accel.X %d.%d", accel_data[0].val1, accel_data[0].val2);
+        LOG_INF("sensor_channel_get accel.Y %d.%d", accel_data[1].val1, accel_data[1].val2);
+        LOG_INF("sensor_channel_get accel.Z %d.%d", accel_data[2].val1, accel_data[2].val2);
 
         k_sleep(K_MSEC(500));
     }
