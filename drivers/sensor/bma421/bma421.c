@@ -97,33 +97,23 @@ static int bma421_sample_fetch(const struct device *dev, enum sensor_channel cha
 	default:
 		return -ENOTSUP;
 	}
-LOG_INF("x:%d y:%d z:%d", drv_data->accel.x, drv_data->accel.y, drv_data->accel.z);
+
 	return retval;
 }
 
 static void bma421_channel_accel_convert(struct sensor_value *val,
-		uint16_t raw_val)
+		int64_t raw_val)
 {
-	/*
-	 * accel_val = (sample * BMA280_PMU_FULL_RAGE) /
-	 *             (2^data_width * 10^6)
-	 */
-/*	raw_val = (raw_val * BMA421_ACC_FULL_RANGE) /
-		(1 << (8 + BMA421_ACCEL_LSB_BITS));
-	val->val1 = raw_val / 1000000;
-	val->val2 = raw_val % 1000000;*/
+	raw_val = (raw_val * BMA421_ACC_FULL_RANGE / 4096);
+
+	val->val1 = raw_val / 1000000LL;
+	val->val2 = raw_val % 1000000LL;
 
 	/* normalize val to make sure val->val2 is positive */
-/*	if (val->val2 < 0) {
+	if (val->val2 < 0) {
 		val->val1 -= 1;
 		val->val2 += 1000000;
-	}*/
-}
-
-static void bma421_channel_value_add(struct sensor_value *val)
-{
-	val->val1 = 32; //todo -- here values can be read from REG 0x1E step counter
-	val->val2 = 88;
+	}
 }
 
 static int bma421_channel_get(const struct device *dev,
@@ -142,7 +132,6 @@ static int bma421_channel_get(const struct device *dev,
 		bma421_channel_accel_convert(val, drv_data->accel.x);
 		bma421_channel_accel_convert(val + 1, drv_data->accel.y);
 		bma421_channel_accel_convert(val + 2, drv_data->accel.z);
-		bma421_channel_value_add(val + 3); //todo check how extra data can be passed
 	} else if (chan == SENSOR_CHAN_DIE_TEMP) {
 		/* temperature_val = 23 + sample / 2 */
 		val->val1 = (drv_data->temperature >> 1) + 23;
