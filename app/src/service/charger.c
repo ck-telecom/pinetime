@@ -10,11 +10,10 @@ LOG_MODULE_REGISTER(CHARGER, LOG_LEVEL_INF);
 static const struct gpio_dt_spec charger = GPIO_DT_SPEC_GET_OR(DT_ALIAS(charger), gpios, {0});
 static struct gpio_callback charger_cb;
 
-static void battery_charging_isr(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+static void charger_isr(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
     int val = gpio_pin_get(dev, CHARGER_PIN);
-    LOG_INF("val = %d", val);
-//	battery_update_charging_status(res != 1U);
+    LOG_INF("val = %d", val); // 1: plug-in
 }
 
 int charger_init(const struct device *dev)
@@ -25,7 +24,7 @@ int charger_init(const struct device *dev)
 
     gpio_pin_interrupt_configure_dt(&charger, GPIO_INT_EDGE_BOTH);
 
-    gpio_init_callback(&charger_cb, battery_charging_isr, BIT(charger.pin));
+    gpio_init_callback(&charger_cb, charger_isr, BIT(charger.pin));
     gpio_add_callback(charger.port, &charger_cb);
 
     return retval;

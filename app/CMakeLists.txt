@@ -16,10 +16,11 @@ target_sources(app PRIVATE src/service/vibrator.c)
 target_sources(app PRIVATE src/service/display.c)
 target_sources(app PRIVATE src/service/touch.c)
 target_sources(app PRIVATE src/service/bma4xx.c)
+target_sources(app PRIVATE src/service/charger.c)
 
 target_sources(app PRIVATE src/backlight.c)
 target_sources(app PRIVATE src/battery.c)
-target_sources(app PRIVATE src/charger.c)
+
 target_sources(app PRIVATE src/screens/home.c)
 target_sources(app PRIVATE src/screens/clock_face.c)
 
