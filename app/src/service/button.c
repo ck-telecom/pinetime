@@ -13,36 +13,35 @@
 #define KEY_IN      DT_GPIO_PIN(DT_ALIAS(sw0), gpios)
 #define KEY_OUT     DT_GPIO_PIN(DT_ALIAS(sw1), gpios)
 
-#define BTN_DEBOUNCE_TIME 100 /* 100 ms */
+#define BTN_DEBOUNCE_TIME 10 /* 10 ms */
 
+static const struct gpio_dt_spec key_in = GPIO_DT_SPEC_GET_OR(KEY_IN, gpios, {0});
+static const struct gpio_dt_spec key_out = GPIO_DT_SPEC_GET_OR(KEY_OUT, gpios, {0});
 
 LOG_MODULE_REGISTER(button, LOG_LEVEL_INF);
 
 static const struct device *button_dev;
-static struct k_timer timer_debounce;
-
 
 K_MSGQ_DEFINE(button_msgq, sizeof(struct msg), 10, 4);
 
-//static sys_slist_t evt_list;
-static struct gpio_callback button_cb;
+static void work_handler(struct k_work *work)
+{/*
+    const struct device *button_dev = k_timer_user_data_get(timer);
 
-
-struct node {
-    int (*func)(void *arg);
-    //struct sys_slist_t evt_list;
-};
-
-static void button_event_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
-{
-    /* start one shot timer that expires after 200 ms */
-    //k_timer_start(&timer_debounce, K_MSEC(BTN_DEBOUNCE_TIME), K_NO_WAIT);
-    struct btn_msg m = { 0 };
     int state = gpio_pin_get(button_dev, KEY_IN);
     uint32_t val = (state ? BUTTON_STATE_PRESSED : BUTTON_STATE_RELEASED);
     printk("pin state:%d\n", state);
 
-    k_msgq_put(&button_msgq, &m, K_NO_WAIT);
+    k_msgq_put(&button_msgq, &val, K_NO_WAIT);*/
+}
+
+static K_DELAYED_WORK_DEFINE(work, work_handler);
+
+static struct gpio_callback button_cb;
+
+static void button_event_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+    k_delayed_work_submit(&work, K_MSEC(BTN_DEBOUNCE_TIME));
 }
 
 static inline int button_is_pressed(uint8_t id)
@@ -122,39 +121,22 @@ static uint8_t button_check_time()
     return any_pressed;
 }
 
-void button_event_send(struct k_timer *timer)
-{
-    const struct device *button_dev = k_timer_user_data_get(timer);
-
-    int state = gpio_pin_get(button_dev, KEY_IN);
-    uint32_t val = (state ? BUTTON_STATE_PRESSED : BUTTON_STATE_RELEASED);
-    printk("pin state:%d\n", state);
-
-    k_msgq_put(&button_msgq, &val, K_NO_WAIT);
-}
-
 int button_init(const struct device *dev)
 {
     int retval = 0;
 
-    button_dev = device_get_binding(BTN_PORT);
-    if (!button_dev) {
-        return -ENODEV;
-    }
-
-    k_timer_init(&timer_debounce, button_event_send, NULL);
-    k_timer_user_data_set(&timer_debounce, (void *)button_dev);
-
     /* Set button out pin to high to enable the button */
-    gpio_pin_configure(button_dev, KEY_OUT, GPIO_OUTPUT_ACTIVE | DT_GPIO_FLAGS(DT_ALIAS(sw1), gpios));
+    gpio_pin_configure_dt(&key_out, GPIO_OUTPUT_ACTIVE);
 
-    retval = gpio_pin_configure(button_dev, KEY_IN, GPIO_INPUT | GPIO_INT_EDGE_BOTH | DT_GPIO_FLAGS(DT_ALIAS(sw0), gpios));
+    gpio_pin_configure_dt(&key_in, GPIO_INPUT);
+
+    retval = gpio_pin_interrupt_configure(button_dev, KEY_IN, GPIO_INT_EDGE_BOTH);
     if (retval) {
         LOG_ERR("failed to configure pin %d '%s'\n", KEY_IN, DT_LABEL(DT_ALIAS(sw0)));
         return retval;
     }
 
-    gpio_init_callback(&button_cb, button_event_cb, BIT(KEY_IN));
+    gpio_init_callback(&button_cb, button_event_cb, BIT(key_in.pin));
     gpio_add_callback(button_dev, &button_cb);
 
     LOG_INF("button init done");
