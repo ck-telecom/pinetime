@@ -21,7 +21,7 @@ target_sources(app PRIVATE src/service/event_service.c)
 
 target_sources(app PRIVATE src/backlight.c)
 target_sources(app PRIVATE src/battery.c)
-
+target_sources(app PRIVATE src/bt.c)
 target_sources(app PRIVATE src/screens/home.c)
 target_sources(app PRIVATE src/screens/clock_face.c)
 
