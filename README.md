@@ -1,11 +1,11 @@
 # pinetime
 
 #### Introduction
-zephyr based PineTime
+Hypnos do not update any more, this is a new home for zephyr based PineTime
 
 #### Initialization
 ```
-west init -m https://gitee.com/fwatch/pinetime.git --mr develop pinetime
+west init -m https://github.com/ck-telecom/pinetime.git --mr develop pinetime
 
 cd pinetime && west update
 ```
