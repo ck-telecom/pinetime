@@ -24,6 +24,7 @@
 
 K_MSGQ_DEFINE(vibrator_q, sizeof(const struct vibrate_pattern *), 8, 4);
 
+static const struct device *pwm_dev = NULL;
 
 static const struct vibrate_pattern default_vibrate_patterns[VIBRATOR_CMD_MAX] = {
     // VIBRATE_CMD_PLAY_PATTERN_1
@@ -77,7 +78,7 @@ static const struct vibrate_pattern default_vibrate_patterns[VIBRATOR_CMD_MAX] =
 
     // VIBRATE_CMD_STOP
     {
-        .length =  0,
+        .length = 1,
         .buffer = (const struct vibrate_pattern_pair []) {
             {.frequency = 0, .duration_ms = 0}
         }
@@ -102,22 +103,28 @@ void vibrator_play_pattern(const struct vibrate_pattern *pattern)
 {
 
 }
-/*
-vibrator_enable()
-vibrator_disable()
-*/
+
+void vibrator_hw_set_frequency(uint16_t freq)
+{
+    if (freq == 0) {
+        pwm_pin_set_usec(pwm_dev, PWM_CHANNEL, 0, 0, PWM_FLAGS);
+        return;
+    }
+    uint16_t period_us = 1000000UL / freq;
+    pwm_pin_set_usec(pwm_dev, PWM_CHANNEL, period_us, period_us / 2, PWM_FLAGS);
+}
+
 static void vibrator_thread()
 {
     uint8_t buf_idx = 0;
     uint8_t idx = 0;
 
-    const struct device *pwm_dev = NULL;
     pwm_dev = device_get_binding(PWM_LABEL);
     if (!pwm_dev) {
         printk("Error: didn't find %s device\n", PWM_LABEL);
         return;
     }
-    pwm_pin_set_usec(pwm_dev, PWM_CHANNEL, PERIOD_USEC, 700, PWM_FLAGS);
+
     static const struct vibrate_pattern *current_pattern = &default_vibrate_patterns[VIBRATE_CMD_STOP];
     printk("vibrator init done\n");
     for (; ;) {
@@ -126,8 +133,8 @@ static void vibrator_thread()
 
         buf_idx = 0;
         while (buf_idx < current_pattern->length) {
-        // vibrator_hw_set_frequency();
-            k_sleep(K_MSEC(current_pattern->buffer[idx].duration_ms));
+            vibrator_hw_set_frequency(current_pattern->buffer[buf_idx].frequency);
+            k_sleep(K_MSEC(current_pattern->buffer[buf_idx].duration_ms));
             if (k_msgq_get(&vibrator_q, &current_pattern, K_NO_WAIT)) {
                 /* if we just recieved another pattern (including stop), start playing it from the beginning */
                 buf_idx = 0;
