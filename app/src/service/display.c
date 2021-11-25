@@ -168,6 +168,9 @@ view_init(current_screen, lv_scr_act());
         case MSG_BLE_CONNECTION:
             break;
 
+        case MSG_TYPE_CHARGER:
+            break;
+
         default:
             break;
         }
