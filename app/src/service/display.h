@@ -7,6 +7,7 @@
 #define MSG_WAKEUP          3
 #define MSG_BLE_CONNECTION  4
 #define MSG_TYPE_EVT        5
+#define MSG_TYPE_CHARGER    6
 
 struct msg {
     unsigned long type;
@@ -17,7 +18,7 @@ struct msg {
     };
 };
 
-int msg_send_event(struct msg *m, uint32_t event);
+int msg_send_event(struct msg *m, unsigned long type, unsigned long event);
 
 int msg_send_data(struct msg *m, uint32_t type, void *data);
 

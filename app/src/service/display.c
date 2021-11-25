@@ -20,6 +20,13 @@ K_MSGQ_DEFINE(event_msgq, sizeof(struct msg), 10, 4);
 
 LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
 
+int msg_send_event(struct msg *m, unsigned long type, unsigned long event)
+{
+    m->type = type;
+    m->event = event;
+    return k_msgq_put(&event_msgq, m, K_NO_WAIT);
+}
+
 int msg_send_gesture(struct msg *m, uint32_t gesture)
 {
     m->type = MSG_TYPE_GESTURE;

@@ -3,6 +3,8 @@
 #include <drivers/gpio.h>
 #include <logging/log.h>
 
+#include "display.h"
+
 #define CHARGER_PIN     DT_GPIO_PIN(DT_ALIAS(charger), gpios)
 
 LOG_MODULE_REGISTER(CHARGER, LOG_LEVEL_INF);
@@ -12,8 +14,10 @@ static struct gpio_callback charger_cb;
 
 static void charger_isr(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
+    struct msg msg;
     int val = gpio_pin_get(dev, CHARGER_PIN);
-    LOG_INF("val = %d", val); // 1: plug-in
+    LOG_INF("val = %d", val); // 1: plug-in, 0: unplug
+    msg_send_event(&msg, MSG_TYPE_CHARGER, val);
 }
 
 int charger_init(const struct device *dev)
