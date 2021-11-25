@@ -27,6 +27,6 @@ int msg_send_button(struct msg *m, uint32_t btn_event);
 int msg_send_data(struct msg *m, uint32_t type, void *data);
 
 extern struct view home;
-extern struct view clocl_face_view;
+extern struct view clock_face_view;
 
 #endif /* _GUI_H */

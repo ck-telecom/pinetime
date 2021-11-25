@@ -3,6 +3,7 @@
 
 #include <lvgl.h>
 
+struct msg;
 /* widget flags */
 #define WF_DIRTY    (1 << 0)
 #define WF_VISIBLE  (1 << 1)
@@ -24,7 +25,7 @@ struct view {
 
 	lv_obj_t *(*container)(struct view *view);
 
-    int (*event)(struct view *view, uint32_t event);
+    int (*event)(struct view *view, struct msg *m);
 
     int (*gui_event)(struct view *view, uint32_t gesure);
 

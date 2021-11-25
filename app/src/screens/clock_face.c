@@ -215,14 +215,15 @@ int clock_face_exit(struct view *v, lv_obj_t *parent)
     lv_obj_clean(parent);
 }
 
-void clock_face_event_handler()
+void clock_face_event_handler(struct view *v, struct msg *m)
 {
 
 }
 
-struct view clocl_face_view = {
+struct view clock_face_view = {
     .id = CLOCK_FACE_ID,
-    .name = "clocl_face",
+    .name = "clock_face",
     .init = clock_face_init,
+    .event = clock_face_event_handler,
     .exit = clock_face_exit,
 };

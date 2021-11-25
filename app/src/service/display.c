@@ -49,73 +49,11 @@ int msg_send_data(struct msg *m, uint32_t type, void *data)
 }
 
 static struct view *current_screen;
-#if 0
-struct gui gui_ctx {
-    struct view *active_widget;
-};
 
-
-
-
-
-
-
-
-
-void widget_active(struct gui *ctx, struct widget *w)
-{
-    if (ctx->active_widget == w) {
-        return;
-    }
-    if (gui->active_widget)
-        view_close(w);
-
-    view_draw(w);
-    lv_scr_load(view_container(w));
-//  lv_scr_load_anim(view_container(w), LV_SCR_LOAD_ANIM_MOVE_LEFT, 1000, 0, NULL);
-// lv_disp_set_direction
-    ctx->active_widget = w;
-}
-
-void gui_handler(struct gui *ctx, struct msg *m)
-{
-    struct gui_msg *gm = (struct gui_msg *)m->ptr;
-    switch (gm->id) {
-    case MSG_ID_GUI_SWITCH :
-    case MSG_ID_GUI_SWITCH_UP :
-        widget_active(ctx, gm->data);
-        break;
-    default:
-        break;
-    }
-}
-
-int evt_handler(struct gui *ctx, uint32_t evt)
-{
-    struct widget *w = ctx->active_widget;
-    if (w == NULL)
-        return;
-
-    if ( (w->flags & WF_ACTIVE) && (w->event) && event ) {
-        w->event(w, evt);
-    }
-    if ( (w->flags & WF_VISIBLE) && (w->flags & WF_DIRTY) ) {
-        if (v->redraw) {
-            w->redraw(w);//redraw later
-            w->flags &= ~WF_DIRTY;
-        }
-        return 1;
-    }
-    return 0;
-}
-
-
-#endif
-
-void display_gesure_handler(uint32_t gesture)
+void display_event_handler(struct msg *m)
 {
     if (current_screen->event)
-        current_screen->event(current_screen, gesture);
+        current_screen->event(current_screen, m);
 }
 
 void display_thread(void* arg1, void *arg2, void *arg3)
@@ -136,12 +74,14 @@ current_screen = &home;
 view_init(current_screen, lv_scr_act());
     while (1) {
         ret = k_msgq_get(&event_msgq, &m, timeout);
-        if (ret == 0) {
+        display_event_handler(&m);
+/*        if (ret == 0) {
             if (m.type == MSG_TYPE_GESTURE) {
                 LOG_INF("gesture:%d", m.gesture);
 
             }
         }
+
         switch (m.type) {
         case MSG_TYPE_GESTURE:
             display_gesure_handler(m.gesture);
@@ -174,7 +114,7 @@ view_init(current_screen, lv_scr_act());
         default:
             break;
         }
-
+*/
         lv_task_handler();
         LOG_DBG("lv_task_handler");
     }

@@ -42,6 +42,13 @@ static void roller_callback(lv_obj_t *obj, lv_event_t event)
     lv_label_set_text(obj, "Clicked");
 }
 
+#if LV_USE_ANIMATION
+static void anim_x_cb(void * var, int32_t v)
+{
+    lv_obj_set_x(var, v);
+}
+#endif
+
 int screen_home_draw(struct view *v, lv_obj_t *parent)
 {
 /*    lv_obj_t* bg_clock_img = lv_img_create(lv_scr_act(), NULL);
@@ -94,7 +101,16 @@ int screen_home_draw(struct view *v, lv_obj_t *parent)
     lv_label_set_text(date_label, "Jan 1, 1970");
     lv_obj_align(date_label, NULL, LV_ALIGN_CENTER, 0, 30);
     lv_obj_set_event_cb(date_label, roller_callback);
-
+#if LV_USE_ANIMATION
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, parent);
+    lv_anim_set_values(&a, lv_obj_get_y(parent), 100);
+    lv_anim_set_time(&a, 500);
+    lv_anim_set_exec_cb(&a, anim_x_cb);
+    lv_anim_set_path(&a, lv_anim_path_overshoot);
+    lv_anim_start(&a);
+#endif
     task = lv_task_create(home_task, 500, LV_TASK_PRIO_MID, NULL);
     return 0;
 }
@@ -108,10 +124,10 @@ int home_exit(struct view *v, lv_obj_t *parent)
     return 0;
 }
 
-int home_event(struct view *view, uint32_t event)
+int home_event(struct view *view, struct msg *m)
 {
-    if (event == 0x02) {
-        view_switch_screen(view, &clocl_face_view);
+    if (m->event == 0x02) {
+        view_switch_screen(view, &clock_face_view);
     }
 }
 #endif
