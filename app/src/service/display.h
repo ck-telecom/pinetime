@@ -3,13 +3,17 @@
 
 #define MSG_TYPE_GESTURE    0
 #define MSG_TYPE_BUTTON     1
+#define MSG_SLEEP           2
+#define MSG_WAKEUP          3
+#define MSG_BLE_CONNECTION  4
+#define MSG_TYPE_EVT        5
 
 struct msg {
-    uint32_t type;
+    unsigned long type;
     union {
-        void *data;          /**< for MSG_TYPE_GUI */
-        uint32_t event;     /**< for MSG_TYPE_BUTTON */
-        uint32_t gesture;   /**< for MSG_TYPE_GESTURE */
+        void *data;              /**< for MSG_TYPE_GUI */
+        unsigned long event;     /**< for MSG_TYPE_BUTTON */
+        unsigned long gesture;   /**< for MSG_TYPE_GESTURE */
     };
 };
 
@@ -19,6 +23,7 @@ int msg_send_data(struct msg *m, uint32_t type, void *data);
 
 int msg_send_gesture(struct msg *m, uint32_t gesture);
 int msg_send_button(struct msg *m, uint32_t btn_event);
+int msg_send_data(struct msg *m, uint32_t type, void *data);
 
 extern struct view home;
 extern struct view clocl_face_view;

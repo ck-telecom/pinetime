@@ -7,10 +7,10 @@
 #include <zephyr.h>
 #include <drivers/gpio.h>
 #include <drivers/display.h>
-#include <display.h>
-#include "display.h"
-#include "log.h"
+#include <logging/log.h>
+#include <pm/device.h>
 
+#include "display_power.h"
 
 static const struct device *display_dev;
 
@@ -23,10 +23,10 @@ void display_power_init(void)
 
 void display_power_sleep(void)
 {
-    (void)device_set_power_state(display_dev, DEVICE_PM_LOW_POWER_STATE, NULL, NULL);
+    (void)pm_device_state_set(display_dev, PM_DEVICE_ACTION_SUSPEND);
 }
 
 void display_power_wakeup(void)
 {
-    (void)device_set_power_state(display_dev, DEVICE_PM_ACTIVE_STATE, NULL, NULL);
+    (void)pm_device_state_set(display_dev, PM_DEVICE_ACTION_RESUME);
 }

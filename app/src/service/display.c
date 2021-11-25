@@ -34,6 +34,13 @@ int msg_send_button(struct msg *m, uint32_t btn_event)
     return k_msgq_put(&event_msgq, m, K_NO_WAIT);
 }
 
+int msg_send_data(struct msg *m, uint32_t type, void *data)
+{
+    m->type = type;
+    m->data = data;
+    return k_msgq_put(&event_msgq, m, K_NO_WAIT);
+}
+
 static struct view *current_screen;
 #if 0
 struct gui gui_ctx {
@@ -44,12 +51,7 @@ struct gui gui_ctx {
 
 
 
-int msg_send_data(struct msg *m, uint32_t type, void *data)
-{
-    m->type = type;
-    m->data = data;
-    return k_msgq_put(&gui_msgq, m, K_NO_WAIT);
-}
+
 
 
 
@@ -114,6 +116,8 @@ void display_thread(void* arg1, void *arg2, void *arg3)
     struct msg m;
     int ret;
     const struct device *display_dev;
+    k_timeout_t timeout = K_MSEC(10);
+
     display_dev = device_get_binding(CONFIG_LVGL_DISPLAY_DEV_NAME);
     if (display_dev == NULL) {
         LOG_ERR("device not found.  Aborting test.");
@@ -123,24 +127,46 @@ void display_thread(void* arg1, void *arg2, void *arg3)
 
 current_screen = &home;
 view_init(current_screen, lv_scr_act());
-    while (1)
-    {
-        ret = k_msgq_get(&event_msgq, &m, K_MSEC(10)); // 10 ms timeout
+    while (1) {
+        ret = k_msgq_get(&event_msgq, &m, timeout);
         if (ret == 0) {
             if (m.type == MSG_TYPE_GESTURE) {
                 LOG_INF("gesture:%d", m.gesture);
-                display_gesure_handler(m.gesture);
+
             }
         }
-/*       if (m.type == MSG_TYPE_GUI) {
-            gui_handler(ctx, &m);
-        } else if (m.type == MSG_TYPE_EVT) {
-            evt_handler(ctx, m.event);
-        } else if(m.type == MSG_TYPE_GESTURE) {
-            gesture_handler(ctx, m.gesture);
-        }*/
+        switch (m.type) {
+        case MSG_TYPE_GESTURE:
+            display_gesure_handler(m.gesture);
+            break;
+
+        case MSG_TYPE_EVT:
+            break;
+
+        case MSG_SLEEP:
+            backlight_enable(false);
+            display_power_sleep();
+            timeout = K_FOREVER;
+            break;
+
+        case MSG_WAKEUP:
+            display_power_wakeup();
+            backlight_enable(true);
+            timeout = K_MSEC(10);
+            break;
+
+        case MSG_TYPE_BUTTON:
+            break;
+
+        case MSG_BLE_CONNECTION:
+            break;
+
+        default:
+            break;
+        }
+
         lv_task_handler();
-        // LOG_INF("lv_task_handler");
+        LOG_DBG("lv_task_handler");
     }
 }
 

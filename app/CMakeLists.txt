@@ -18,6 +18,7 @@ target_sources(app PRIVATE src/service/touch.c)
 target_sources(app PRIVATE src/service/bma4xx.c)
 target_sources(app PRIVATE src/service/charger.c)
 target_sources(app PRIVATE src/service/event_service.c)
+target_sources(app PRIVATE src/service/display_power.c)
 
 target_sources(app PRIVATE src/backlight.c)
 target_sources(app PRIVATE src/battery.c)
