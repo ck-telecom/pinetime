@@ -12,51 +12,49 @@
 #define TOUCH_DEV "CST816S"
 
 LOG_MODULE_REGISTER(touch, LOG_LEVEL_INF);
-extern struct k_msgq kscan_msgq;
-#if 0
+
 K_MSGQ_DEFINE(kscan_msgq, sizeof(lv_indev_data_t),
-	      16, 4);
+          16, 4);
 
 static bool lvgl_indev_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data)
 {
-	lv_indev_data_t curr;
+    lv_indev_data_t curr;
 
-	static lv_indev_data_t prev = {
-		.point.x = 0,
-		.point.y = 0,
-		.state = LV_INDEV_STATE_REL,
-	};
+    static lv_indev_data_t prev = {
+        .point.x = 0,
+        .point.y = 0,
+        .state = LV_INDEV_STATE_REL,
+    };
 
-	prev.state = LV_INDEV_STATE_REL;
-	if (k_msgq_get(&kscan_msgq, &curr, K_NO_WAIT) != 0) {
-		goto set_and_release;
-	}
-LOG_INF("curr x");
-	prev = curr;
+    prev.state = LV_INDEV_STATE_REL;
+    if (k_msgq_get(&kscan_msgq, &curr, K_NO_WAIT) != 0) {
+        goto set_and_release;
+    }
+
+    prev = curr;
 
 set_and_release:
-	*data = prev;
+    *data = prev;
 
-	return k_msgq_num_used_get(&kscan_msgq) > 0;
-	return 0;
+    return k_msgq_num_used_get(&kscan_msgq) > 0;
 }
 
 static int lvgl_indev_init(void)
 {
-	lv_indev_drv_t indev_drv;
+    lv_indev_drv_t indev_drv;
 
-	lv_indev_drv_init(&indev_drv);
-	indev_drv.type = LV_INDEV_TYPE_POINTER;
-	indev_drv.read_cb = lvgl_indev_read_cb;
+    lv_indev_drv_init(&indev_drv);
+    indev_drv.type = LV_INDEV_TYPE_POINTER;
+    indev_drv.read_cb = lvgl_indev_read_cb;
 
-	if (lv_indev_drv_register(&indev_drv) == NULL) {
-		LOG_ERR("Failed to register input device.");
-		return -EPERM;
-	}
+    if (lv_indev_drv_register(&indev_drv) == NULL) {
+        LOG_ERR("Failed to register input device.");
+        return -EPERM;
+    }
 
-	return 0;
+    return 0;
 }
-#endif
+
 void touch_isr_handler(const struct device *touch_dev, const struct sensor_trigger *tap)
 {
     enum cst816s_gesture gesture;
@@ -66,16 +64,16 @@ void touch_isr_handler(const struct device *touch_dev, const struct sensor_trigg
         LOG_ERR("Touch sample update error.");
     }
 
-//	display_wake_up();
-//	backlight_enable(true);
-//	k_timer_start(&display_off_timer, DISPLAY_TIMEOUT, K_NO_WAIT);
+//    display_wake_up();
+//    backlight_enable(true);
+//    k_timer_start(&display_off_timer, DISPLAY_TIMEOUT, K_NO_WAIT);
 
     struct sensor_value gesture_val;
     sensor_channel_get(touch_dev, CST816S_CHAN_GESTURE, &gesture_val);
     gesture = gesture_val.val1;
     sensor_channel_get(touch_dev, CST816S_CHAN_TOUCH_POINT_1, &touch_point);
 
-    if (gesture == CLICK) {/*
+    if (gesture == CLICK) {
         lv_indev_data_t data = {
             .point.x = touch_point.val1,
             .point.y = touch_point.val2,
@@ -84,7 +82,7 @@ void touch_isr_handler(const struct device *touch_dev, const struct sensor_trigg
         LOG_INF("Gesture %d on x=%d, y=%d", gesture, touch_point.val1, touch_point.val2);
         if (k_msgq_put(&kscan_msgq, &data, K_NO_WAIT) != 0) {
             LOG_ERR("Could put input data into queue");
-        }*/
+        }
     } else {
         struct msg msg;
         msg_send_gesture(&msg, gesture);
@@ -108,10 +106,10 @@ int touch_init(const struct device *dev)
             return -ENOTSUP;
         }
     }
-    //lvgl_indev_init();
-    return 0;
+
+    return lvgl_indev_init();
 }
-SYS_INIT(touch_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
+SYS_INIT(touch_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 
 static void touch_thread()
 {
