@@ -12,6 +12,7 @@
 
 #include "display.h"
 #include "../view.h"
+#include "../event/event_service.h"
 
 #define DISPLAY_STACK_SIZE      1024
 #define DISPLAY_PRIORITY        5
@@ -88,6 +89,7 @@ view_init(current_screen, lv_scr_act());
             break;
 
         case MSG_TYPE_EVT:
+            event_service_event_trigger(m.command, m.context, NULL);
             break;
 
         case MSG_SLEEP:

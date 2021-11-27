@@ -16,6 +16,8 @@ struct msg {
         unsigned long event;     /**< for MSG_TYPE_BUTTON */
         unsigned long gesture;   /**< for MSG_TYPE_GESTURE */
     };
+    unsigned long command;
+    void *context;
 };
 
 int msg_send_event(struct msg *m, unsigned long type, unsigned long event);
