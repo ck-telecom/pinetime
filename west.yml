@@ -12,20 +12,25 @@ manifest:
   #
   projects:
     - name: cmsis
-      path: modules/hal/cmsis
       revision: b0612c97c1401feeb4160add6462c3627fe90fc7
+      path: modules/hal/cmsis
+
     - name: hal_nordic
+      revision: cad21db72a61b8dde0aabf95301dfd9dee119018
       path: modules/hal/nordic
-      revision: a6e5299041f152da5ae0ab17b2e44e088bb96d6d
+
     - name: lvgl
-      path: modules/lib/gui/lvgl
       revision: 783c1f78c8e39751fe89d0883c8bce7336f55e94
+      path: modules/lib/gui/lvgl
+
     - name: segger
-      path: modules/debug/segger
       revision: 3a52ab222133193802d3c3b4d21730b9b1f1d2f6
+      path: modules/debug/segger
+
     - name: tinycrypt
-      path: modules/crypto/tinycrypt
       revision: 3e9a49d2672ec01435ffbf0d788db6d95ef28de0
+      path: modules/crypto/tinycrypt
+
     - name: zephyr
       west-commands: scripts/west-commands.yml
       revision: main
