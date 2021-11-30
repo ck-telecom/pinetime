@@ -1,37 +1,53 @@
 #include <kernel.h>
+#include <sys/slist.h>
+
+#include <stdbool.h>
 
 #include "event_service.h"
+#include "../service/display.h"
+
+#define EVENT_MALLOC
+#define EVENT_FREE
 
 typedef struct event_service_subscriber {
     EventServiceCommand command;
     EventServiceProc callback;
     void *context;
-    //app_running_thread *thread;
-    k_tid_t thread; //NOTE: lvgl is not thread safe, so this thread is always in lvgl thread
-    list_node node;
+    k_tid_t thread; //NOTE: lvgl is not thread safe, so this thread is always in lvgl thread, and we don't need locker
+    sys_snode_t node;
 } event_service_subscriber;
+
+static sys_slist_t event_list_head = SYS_SLIST_STATIC_INIT(&event_list_head);
 
 void event_service_subscribe(EventServiceCommand command, EventServiceProc callback)
 {
-    app_running_thread *_this_thread = appmanager_get_current_thread();
-    event_service_subscriber *conn = app_calloc(1, sizeof(event_service_subscriber));
+    event_service_subscriber *conn = app_malloc(1, sizeof(event_service_subscriber));
     conn->thread = k_current_get();
     conn->callback = callback;
     conn->command = command;
 
-    list_init_node(&conn->node);
-    list_insert_head(&_subscriber_list_head, &conn->node);
+    sys_slist_append(&event_list_head, &conn->node);
+}
+
+void event_service_subscribe_with_context(EventServiceCommand command, EventServiceProc callback, void *context)
+{
+    event_service_subscriber *conn = app_malloc(1, sizeof(event_service_subscriber));
+    conn->thread = k_current_get();
+    conn->callback = callback;
+    conn->command = command;
+    conn->context = context;
+
+    sys_slist_append(&event_list_head, &conn->node);;
 }
 
 void event_service_unsubscribe_thread(EventServiceCommand command, k_tid_t thread)
 {
     event_service_subscriber *conn;
-    list_foreach(conn, &_subscriber_list_head, event_service_subscriber, node)
-    {
+    SYS_SLIST_FOR_EACH_CONTAINER(&event_list_head, conn, node) {
         if (conn->thread == thread)
         {
-            list_remove(&_subscriber_list_head, &conn->node);
-            remote_free(conn);
+            sys_slist_find_and_remove(&event_list_head, &conn->node);
+            app_free(conn);
             break;
         }
     }
@@ -40,12 +56,11 @@ void event_service_unsubscribe_thread(EventServiceCommand command, k_tid_t threa
 void event_service_unsubscribe_thread_all(k_tid_t thread)
 {
     event_service_subscriber *conn;
-    list_foreach(conn, &_subscriber_list_head, event_service_subscriber, node)
-    {
+    SYS_SLIST_FOR_EACH_CONTAINER(&event_list_head, conn, node) {
         if (conn->thread == thread)
         {
-            list_remove(&_subscriber_list_head, &conn->node);
-            remote_free(conn);
+            sys_slist_find_and_remove(&event_list_head, &conn->node);
+            app_free(conn);
             break;
         }
     }
@@ -57,35 +72,57 @@ void event_service_unsubscribe(EventServiceCommand command)
     event_service_unsubscribe_thread(command, _this_thread);
 }
 
-void event_service_event_trigger(EventServiceCommand command, void *data, DestroyEventProc destroy_callback)
+void *event_service_get_context(EventServiceCommand command)
 {
-    DestroyEventProc destroy = destroy_callback;
-
-    if (destroy_callback)
-        destroy = MK_THUMB_CB(destroy_callback);
-
     k_tid_t _this_thread = k_current_get();
     event_service_subscriber *conn;
-    list_foreach(conn, &_subscriber_list_head, event_service_subscriber, node)
+    SYS_SLIST_FOR_EACH_CONTAINER(&event_list_head, conn, node) {
+        if (conn->thread == _this_thread && conn->command == command)
+        {
+            return conn->context;
+        }
+    }
+    return NULL;
+}
+
+void event_service_set_context(EventServiceCommand command, void *context)
+{
+    k_tid_t _this_thread = k_current_get();
+    event_service_subscriber *conn;
+    SYS_SLIST_FOR_EACH_CONTAINER(&event_list_head, coon, node) {
+        if (conn->thread == _this_thread && conn->command == command)
+        {
+            conn->context = context;
+            return;
+        }
+    }
+}
+
+boolean event_service_post(EventServiceCommand command, void *data, DestroyEventProc destroy_callback)
+{
+    /* Step 1. post to the app thread */
+    struct msg m;
+    msg_send_data(&m, MSG_TYPE_EVT, (void *)data);
+    if (appmanager_post_event_message(command, data, destroy_callback) == false)
     {
+        //LOG_ERROR("Queue Full! Not processing");
+        destroy_callback(data);
+        return false;
+    }
+
+    return true;
+}
+
+void event_service_event_trigger(EventServiceCommand command, void *data, DestroyEventProc destroy_callback)
+{
+    k_tid_t _this_thread = k_current_get();
+    event_service_subscriber *conn;
+    SYS_SLIST_FOR_EACH_CONTAINER(&event_list_head, coon, node) {
         if (conn->command == command)
         {
 //             LOG_INFO("Triggering %x %x %x", data, destroy, conn->callback);
             if (conn->thread == _this_thread && conn->callback)
                 conn->callback(command, data, conn->context);
-
-            /* Step 2. App processing done, post it to overlay thread */
-            if (_this_thread->thread_type == AppThreadMainApp)
-                overlay_window_post_event(command, data, destroy);
-
-            /* Step 3. if we are the overlay thread, then destroy this packet */
-            else if (_this_thread->thread_type == AppThreadOverlay)
-            {
-                if (destroy)
-                    destroy(data);
-
-                appmanager_post_draw_message(1);
-            }
         }
     }
 }
