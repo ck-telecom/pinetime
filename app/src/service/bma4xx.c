@@ -13,7 +13,7 @@ LOG_MODULE_REGISTER(bma4xx, LOG_LEVEL_INF);
 
 #ifdef CONFIG_BMA421_TRIGGER
 static void bma421_handler(const struct device *dev,
-			const struct sensor_trigger *trig)
+			struct sensor_trigger *trig)
 {
     struct sensor_value val[3];
 
@@ -39,7 +39,7 @@ static void bma4xx_thread()
     }
 
     if (IS_ENABLED(CONFIG_BMA421_TRIGGER)) {
-        const struct sensor_trigger trig = {
+        struct sensor_trigger trig = {
             .type = SENSOR_TRIG_DATA_READY,
             .chan = SENSOR_CHAN_ALL,
         };

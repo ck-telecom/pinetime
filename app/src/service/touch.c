@@ -55,7 +55,7 @@ static int lvgl_indev_init(void)
     return 0;
 }
 
-void touch_isr_handler(const struct device *touch_dev, const struct sensor_trigger *tap)
+void touch_isr_handler(const struct device *touch_dev, struct sensor_trigger *tap)
 {
     enum cst816s_gesture gesture;
     struct sensor_value touch_point;
