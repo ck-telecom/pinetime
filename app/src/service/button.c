@@ -15,14 +15,14 @@
 
 #define BTN_DEBOUNCE_TIME 10 /* 10 ms */
 
-static const struct gpio_dt_spec key_in = GPIO_DT_SPEC_GET_OR(KEY_IN, gpios, {0});
-static const struct gpio_dt_spec key_out = GPIO_DT_SPEC_GET_OR(KEY_OUT, gpios, {0});
+static const struct gpio_dt_spec key_in = GPIO_DT_SPEC_GET_OR(DT_ALIAS(sw0), gpios, {0});
+static const struct gpio_dt_spec key_out = GPIO_DT_SPEC_GET_OR(DT_ALIAS(sw1), gpios, {0});
 
 LOG_MODULE_REGISTER(button, LOG_LEVEL_INF);
 
 static const struct device *button_dev;
 
-K_MSGQ_DEFINE(button_msgq, sizeof(struct msg), 10, 4);
+K_MSGQ_DEFINE(button_msgq, sizeof(struct btn_msg), 10, 4);
 
 static void work_handler(struct k_work *work)
 {/*
@@ -41,7 +41,12 @@ static struct gpio_callback button_cb;
 
 static void button_event_cb(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-    k_delayed_work_submit(&work, K_MSEC(BTN_DEBOUNCE_TIME));
+    //k_delayed_work_submit(&work, K_MSEC(BTN_DEBOUNCE_TIME));
+    struct btn_msg m;
+    int state = gpio_pin_get_dt(&key_in);
+    m.val = (state ? BUTTON_STATE_PRESSED : BUTTON_STATE_RELEASED);
+    printk("pin state:%d\n", state);
+    k_msgq_put(&button_msgq, &m, K_MSEC(BTN_DEBOUNCE_TIME));
 }
 
 static inline int button_is_pressed(uint8_t id)
@@ -125,10 +130,20 @@ int button_init(const struct device *dev)
 {
     int retval = 0;
 
+    if (!device_is_ready(key_in.port) || !device_is_ready(key_out.port)) {
+        LOG_ERR("device is not ready");
+        return -ENODEV;
+    }
     /* Set button out pin to high to enable the button */
     gpio_pin_configure_dt(&key_out, GPIO_OUTPUT_ACTIVE);
 
     gpio_pin_configure_dt(&key_in, GPIO_INPUT);
+
+    gpio_init_callback(&button_cb, button_event_cb, BIT(key_in.pin));
+    retval = gpio_add_callback(button_dev, &button_cb);
+    if (retval) {
+        return retval;
+    }
 
     retval = gpio_pin_interrupt_configure(button_dev, KEY_IN, GPIO_INT_EDGE_BOTH);
     if (retval) {
@@ -136,13 +151,10 @@ int button_init(const struct device *dev)
         return retval;
     }
 
-    gpio_init_callback(&button_cb, button_event_cb, BIT(key_in.pin));
-    gpio_add_callback(button_dev, &button_cb);
-
     LOG_INF("button init done");
     return retval;
 }
-SYS_INIT(button_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
+SYS_INIT(button_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 
 static void button_thread()
 {
