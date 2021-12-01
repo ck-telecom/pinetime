@@ -2,6 +2,7 @@
 #define _VIEW_H
 
 #include <lvgl.h>
+#include <stdbool.h>
 
 struct msg;
 /* widget flags */
@@ -25,7 +26,7 @@ struct view {
 
 	lv_obj_t *(*container)(struct view *view);
 
-    int (*event)(struct view *view, struct msg *m);
+    bool (*event)(struct view *view, struct msg *m);
 
     int (*gui_event)(struct view *view, uint32_t gesure);
 

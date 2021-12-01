@@ -124,7 +124,7 @@ int home_exit(struct view *v, lv_obj_t *parent)
     return 0;
 }
 
-int home_event(struct view *view, struct msg *m)
+bool home_event(struct view *view, struct msg *m)
 {
     if (m->event == 0x02) {
         view_switch_screen(view, &clock_face_view);

@@ -12,7 +12,7 @@
 
 #include "display.h"
 #include "../view.h"
-#include "../event/event_service.h"
+//#include "../event/event_service.h"
 
 #define DISPLAY_STACK_SIZE      1024
 #define DISPLAY_PRIORITY        5
