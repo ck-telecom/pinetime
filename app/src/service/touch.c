@@ -73,7 +73,7 @@ void touch_isr_handler(const struct device *touch_dev, struct sensor_trigger *ta
     gesture = gesture_val.val1;
     sensor_channel_get(touch_dev, CST816S_CHAN_TOUCH_POINT_1, &touch_point);
 
-    if (gesture == CLICK) {
+    if (gesture == CLICK) {/*
         lv_indev_data_t data = {
             .point.x = touch_point.val1,
             .point.y = touch_point.val2,
@@ -82,10 +82,10 @@ void touch_isr_handler(const struct device *touch_dev, struct sensor_trigger *ta
         LOG_INF("Gesture %d on x=%d, y=%d", gesture, touch_point.val1, touch_point.val2);
         if (k_msgq_put(&kscan_msgq, &data, K_NO_WAIT) != 0) {
             LOG_ERR("Could put input data into queue");
-        }
+        }*/
     } else {
-        struct msg msg;
-        msg_send_gesture(&msg, gesture);
+        msg_send_gesture(gesture);
+        LOG_DBG("Gesture %d", gesture);
     }
 }
 
@@ -107,7 +107,7 @@ int touch_init(const struct device *dev)
         }
     }
 
-    return lvgl_indev_init();
+    return 0;//lvgl_indev_init();
 }
 SYS_INIT(touch_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 

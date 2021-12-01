@@ -42,7 +42,7 @@ static void roller_callback(lv_obj_t *obj, lv_event_t event)
     lv_label_set_text(obj, "Clicked");
 }
 
-#if LV_USE_ANIMATION
+#if 0
 static void anim_x_cb(void * var, int32_t v)
 {
     lv_obj_set_x(var, v);
@@ -101,7 +101,7 @@ int screen_home_draw(struct view *v, lv_obj_t *parent)
     lv_label_set_text(date_label, "Jan 1, 1970");
     lv_obj_align(date_label, NULL, LV_ALIGN_CENTER, 0, 30);
     lv_obj_set_event_cb(date_label, roller_callback);
-#if LV_USE_ANIMATION
+#if 0
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_var(&a, parent);
@@ -124,9 +124,10 @@ int home_exit(struct view *v, lv_obj_t *parent)
     return 0;
 }
 
-bool home_event(struct view *view, struct msg *m)
+bool home_event(struct view *view, void *arg)
 {
-    if (m->event == 0x02) {
+    uint32_t gesture = *(uint32_t *)arg;
+    if (gesture == 0x02) {
         view_switch_screen(view, &clock_face_view);
     }
 }

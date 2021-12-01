@@ -19,7 +19,7 @@
 
 K_MSGQ_DEFINE(event_msgq, sizeof(struct msg), 10, 4);
 K_MBOX_DEFINE(display_mailbox);
-
+uint8_t buf[4] = {0x3F, 0, 0, 0};
 LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
 
 int msg_send_event(struct msg *m, unsigned long type, unsigned long event)
@@ -29,11 +29,23 @@ int msg_send_event(struct msg *m, unsigned long type, unsigned long event)
     return k_msgq_put(&event_msgq, m, K_NO_WAIT);
 }
 
-int msg_send_gesture(struct msg *m, uint32_t gesture)
+int msg_send_gesture(uint32_t gesture)
 {
-    m->type = MSG_TYPE_GESTURE;
-    m->gesture = gesture;
-    return k_msgq_put(&event_msgq, m, K_NO_WAIT);
+//    m->type = MSG_TYPE_GESTURE;
+//    m->gesture = gesture;
+//    return k_msgq_put(&event_msgq, m, K_NO_WAIT);
+uint32_t val = gesture;
+struct k_mbox_msg send_msg;
+
+memcpy(buf, &val, sizeof(buf));
+
+send_msg.info = MSG_TYPE_GESTURE;
+send_msg.size = 4;
+send_msg.tx_data = buf;
+send_msg.tx_block.data = NULL;
+send_msg.tx_target_thread = K_ANY;
+k_mbox_async_put(&display_mailbox, &send_msg, NULL);
+return 0;
 }
 
 int msg_send_button(struct msg *m, uint32_t btn_event)
@@ -52,10 +64,10 @@ int msg_send_data(struct msg *m, uint32_t type, void *data)
 
 static struct view *current_screen;
 
-void display_event_handler(struct msg *m)
+void display_event_handler(void *arg)
 {
     if (current_screen->event)
-        current_screen->event(current_screen, m);
+        current_screen->event(current_screen, arg);
 }
 
 static uint8_t display_buffer[1024];
@@ -79,8 +91,13 @@ current_screen = &home;
 view_init(current_screen, lv_scr_act());
     while (1) {
 //        ret = k_msgq_get(&event_msgq, &m, timeout);
+recv_msg.info = 0;
+recv_msg.info = 1024;
+recv_msg.rx_source_thread = K_ANY;
+
         ret = k_mbox_get(&display_mailbox, &recv_msg, display_buffer, timeout);
         if (ret == 0) {
+            LOG_DBG("info:%d size:%d data:%d", recv_msg.info, recv_msg.size, *(uint32_t *)display_buffer);
             switch (recv_msg.info) {
             case MSG_TYPE_GESTURE:
                 display_event_handler((void *)display_buffer);
@@ -133,7 +150,6 @@ view_init(current_screen, lv_scr_act());
         }
 */
         lv_task_handler();
-        LOG_DBG("lv_task_handler");
     }
 }
 

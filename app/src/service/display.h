@@ -24,7 +24,7 @@ int msg_send_event(struct msg *m, unsigned long type, unsigned long event);
 
 int msg_send_data(struct msg *m, uint32_t type, void *data);
 
-int msg_send_gesture(struct msg *m, uint32_t gesture);
+int msg_send_gesture(uint32_t gesture);
 int msg_send_button(struct msg *m, uint32_t btn_event);
 int msg_send_data(struct msg *m, uint32_t type, void *data);
 

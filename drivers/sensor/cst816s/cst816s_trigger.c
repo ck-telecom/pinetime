@@ -112,6 +112,10 @@ int cst816s_init_interrupt(const struct device *dev)
 		return -EINVAL;
 	}
 
+	gpio_pin_configure(drv_data->gpio,
+				INTERRUPT_PIN, GPIO_INPUT | GPIO_PULL_UP
+				 | GPIO_ACTIVE_LOW);
+
 	gpio_init_callback(&drv_data->gpio_cb,
 			cst816s_gpio_callback,
 			BIT(INTERRUPT_PIN));
