@@ -24,12 +24,21 @@ int charger_init(const struct device *dev)
 {
     int retval = 0;
 
-    gpio_pin_configure_dt(&charger, GPIO_INPUT);
+    if (!device_is_ready(charger.port)) {
+		LOG_ERR("button device %s is not ready\n", charger.port->name);
+		return -ENODEV;
+    }
 
-    gpio_pin_interrupt_configure_dt(&charger, GPIO_INT_EDGE_BOTH);
+    retval = gpio_pin_configure_dt(&charger, GPIO_INPUT);
+    if (retval)
+        return retval;
+
+    retval = gpio_pin_interrupt_configure_dt(&charger, GPIO_INT_EDGE_BOTH);
+    if (retval)
+        return retval;
 
     gpio_init_callback(&charger_cb, charger_isr, BIT(charger.pin));
-    gpio_add_callback(charger.port, &charger_cb);
+    retval = gpio_add_callback(charger.port, &charger_cb);
 
     return retval;
 }
