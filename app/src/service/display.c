@@ -18,6 +18,7 @@
 #define DISPLAY_PRIORITY        5
 
 K_MSGQ_DEFINE(event_msgq, sizeof(struct msg), 10, 4);
+K_MBOX_DEFINE(display_mailbox);
 
 LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
 
@@ -57,12 +58,15 @@ void display_event_handler(struct msg *m)
         current_screen->event(current_screen, m);
 }
 
+static uint8_t display_buffer[1024];
+
 void display_thread(void* arg1, void *arg2, void *arg3)
 {
-    struct msg m;
+//    struct msg m;
     int ret;
     const struct device *display_dev;
     k_timeout_t timeout = K_MSEC(10);
+struct k_mbox_msg recv_msg;
 
     display_dev = device_get_binding(CONFIG_LVGL_DISPLAY_DEV_NAME);
     if (display_dev == NULL) {
@@ -74,8 +78,19 @@ void display_thread(void* arg1, void *arg2, void *arg3)
 current_screen = &home;
 view_init(current_screen, lv_scr_act());
     while (1) {
-        ret = k_msgq_get(&event_msgq, &m, timeout);
-        display_event_handler(&m);
+//        ret = k_msgq_get(&event_msgq, &m, timeout);
+        ret = k_mbox_get(&display_mailbox, &recv_msg, display_buffer, timeout);
+        if (ret == 0) {
+            switch (recv_msg.info) {
+            case MSG_TYPE_GESTURE:
+                display_event_handler((void *)display_buffer);
+                break;
+
+            default:
+                break;
+            }
+        }
+//        display_event_handler(&m);
 /*        if (ret == 0) {
             if (m.type == MSG_TYPE_GESTURE) {
                 LOG_INF("gesture:%d", m.gesture);
