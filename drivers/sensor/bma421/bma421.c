@@ -242,7 +242,7 @@ int bma421_init_driver(const struct device *dev)
 
 struct bma421_data bma421_driver;
 
-static const struct bma421_config bma421_cfg = {
+static const struct bma421_config bma421_cfg0 = {
 	.i2c_bus = DT_INST_BUS_LABEL(0),
 	.i2c_addr = DT_INST_REG_ADDR(0),
 #if CONFIG_BMA421_TRIGGER
@@ -253,5 +253,5 @@ static const struct bma421_config bma421_cfg = {
 };
 
 DEVICE_DT_INST_DEFINE(0, bma421_init_driver, NULL,
-			&bma421_driver, &bma421_cfg, POST_KERNEL,
+			&bma421_driver, &bma421_cfg0, POST_KERNEL,
 			CONFIG_SENSOR_INIT_PRIORITY, &bma421_driver_api);
