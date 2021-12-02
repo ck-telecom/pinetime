@@ -64,10 +64,10 @@ int msg_send_data(struct msg *m, uint32_t type, void *data)
 
 static struct view *current_screen;
 
-void display_event_handler(void *arg)
+void display_event_handler(uint32_t info, void *arg)
 {
     if (current_screen->event)
-        current_screen->event(current_screen, arg);
+        current_screen->event(current_screen, info, arg);
 }
 
 static uint8_t display_buffer[1024];
@@ -100,7 +100,8 @@ recv_msg.rx_source_thread = K_ANY;
             LOG_DBG("info:%d size:%d data:%d", recv_msg.info, recv_msg.size, *(uint32_t *)display_buffer);
             switch (recv_msg.info) {
             case MSG_TYPE_GESTURE:
-                display_event_handler((void *)display_buffer);
+            case MSG_TYPE_BUTTON:
+                display_event_handler(recv_msg.info, (void *)display_buffer);
                 break;
 
             default:

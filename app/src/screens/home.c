@@ -124,7 +124,7 @@ int home_exit(struct view *v, lv_obj_t *parent)
     return 0;
 }
 
-bool home_event(struct view *view, void *arg)
+bool home_event(struct view *view, uint32_t event, void *arg)
 {
     uint32_t gesture = *(uint32_t *)arg;
     if (gesture == 0x02) {

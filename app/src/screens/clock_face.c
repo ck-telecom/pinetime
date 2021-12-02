@@ -215,7 +215,7 @@ int clock_face_exit(struct view *v, lv_obj_t *parent)
     lv_obj_clean(parent);
 }
 
-bool clock_face_event_handler(struct view *v, void *arg)
+bool clock_face_event_handler(struct view *v, uint32_t event, void *arg)
 {
 
 }

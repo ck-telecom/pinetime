@@ -26,7 +26,7 @@ struct view {
 
 	lv_obj_t *(*container)(struct view *view);
 
-    bool (*event)(struct view *view, void *arg);
+    bool (*event)(struct view *view, uint32_t event, void *arg);
 
     int (*gui_event)(struct view *view, uint32_t gesure);
 
