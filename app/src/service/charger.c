@@ -43,4 +43,4 @@ int charger_init(const struct device *dev)
     return retval;
 }
 
-SYS_INIT(charger_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
+SYS_INIT(charger_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);

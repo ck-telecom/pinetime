@@ -60,4 +60,4 @@ int batttery_init(const struct device *dev)
 
     return retval;
 }
-SYS_INIT(batttery_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
+SYS_INIT(batttery_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);

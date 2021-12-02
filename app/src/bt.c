@@ -56,4 +56,4 @@ static int bt_init(const struct device *dev)
     return err;
 }
 
-SYS_INIT(bt_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
+SYS_INIT(bt_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);

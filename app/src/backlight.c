@@ -31,4 +31,4 @@ int backlight_enable(bool enable)
     return 0;
 }
 
-SYS_INIT(backlight_init, APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
+SYS_INIT(backlight_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
