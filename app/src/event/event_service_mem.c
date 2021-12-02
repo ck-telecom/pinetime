@@ -5,7 +5,7 @@
 K_HEAP_DEFINE(event_mem_pool, CONFIG_EVENT_MEM_POOL_MAX_SIZE *
 	      CONFIG_EVENT_MEM_POOL_NUMBER_BLOCKS);
 
-void *app_calloc(size_t size)
+void *app_alloc(size_t size)
 {
 	return k_heap_alloc(&event_mem_pool, size, K_NO_WAIT);
 }

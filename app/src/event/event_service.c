@@ -4,7 +4,8 @@
 #include <stdbool.h>
 
 #include "event_service.h"
-#include "../service/display.h"
+#include "event_service_mem.h"
+#include "../service/display_api.h"
 
 #define EVENT_MALLOC
 #define EVENT_FREE
@@ -21,7 +22,7 @@ static sys_slist_t event_list_head = SYS_SLIST_STATIC_INIT(&event_list_head);
 
 void event_service_subscribe(EventServiceCommand command, EventServiceProc callback)
 {
-    event_service_subscriber *conn = app_malloc(1, sizeof(event_service_subscriber));
+    event_service_subscriber *conn = app_alloc(sizeof(event_service_subscriber));
     conn->thread = k_current_get();
     conn->callback = callback;
     conn->command = command;
@@ -31,7 +32,7 @@ void event_service_subscribe(EventServiceCommand command, EventServiceProc callb
 
 void event_service_subscribe_with_context(EventServiceCommand command, EventServiceProc callback, void *context)
 {
-    event_service_subscriber *conn = app_malloc(1, sizeof(event_service_subscriber));
+    event_service_subscriber *conn = app_alloc(sizeof(event_service_subscriber));
     conn->thread = k_current_get();
     conn->callback = callback;
     conn->command = command;
@@ -89,7 +90,7 @@ void event_service_set_context(EventServiceCommand command, void *context)
 {
     k_tid_t _this_thread = k_current_get();
     event_service_subscriber *conn;
-    SYS_SLIST_FOR_EACH_CONTAINER(&event_list_head, coon, node) {
+    SYS_SLIST_FOR_EACH_CONTAINER(&event_list_head, conn, node) {
         if (conn->thread == _this_thread && conn->command == command)
         {
             conn->context = context;
@@ -98,26 +99,25 @@ void event_service_set_context(EventServiceCommand command, void *context)
     }
 }
 
-boolean event_service_post(EventServiceCommand command, void *data, DestroyEventProc destroy_callback)
+bool event_service_post(EventServiceCommand command, void *data/*, DestroyEventProc destroy_callback*/)
 {
     /* Step 1. post to the app thread */
-    struct msg m;
-    msg_send_data(&m, MSG_TYPE_EVT, (void *)data);
-    if (appmanager_post_event_message(command, data, destroy_callback) == false)
+    //(command, data);
+    //if (appmanager_post_event_message(command, data, destroy_callback) == false)
     {
         //LOG_ERROR("Queue Full! Not processing");
-        destroy_callback(data);
+        //destroy_callback(data);
         return false;
     }
 
     return true;
 }
 
-void event_service_event_trigger(EventServiceCommand command, void *data, DestroyEventProc destroy_callback)
+void event_service_event_trigger(EventServiceCommand command, void *data/*, DestroyEventProc destroy_callback*/)
 {
     k_tid_t _this_thread = k_current_get();
     event_service_subscriber *conn;
-    SYS_SLIST_FOR_EACH_CONTAINER(&event_list_head, coon, node) {
+    SYS_SLIST_FOR_EACH_CONTAINER(&event_list_head, conn, node) {
         if (conn->command == command)
         {
 //             LOG_INFO("Triggering %x %x %x", data, destroy, conn->callback);

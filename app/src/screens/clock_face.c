@@ -5,6 +5,7 @@
 #include <logging/log.h>
 
 #include "../view.h"
+#include "../service/display_api.h"
 
 LOG_MODULE_REGISTER(clock_face, LOG_LEVEL_INF);
 
@@ -215,9 +216,12 @@ int clock_face_exit(struct view *v, lv_obj_t *parent)
     lv_obj_clean(parent);
 }
 
-bool clock_face_event_handler(struct view *v, uint32_t event, void *arg)
+bool clock_face_event_handler(struct view *view, uint32_t event, void *arg)
 {
-
+    uint32_t gesture = *(uint32_t *)arg;
+    if (gesture == 0x02) {
+        view_switch_screen(view, &date_settings);
+    }
 }
 
 struct view clock_face_view = {

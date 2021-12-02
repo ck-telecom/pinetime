@@ -2,14 +2,16 @@
 #define _DISPLAY_API_H
 
 #include <stdbool.h>
+#include <kernel.h>
 
-#define MSG_TYPE_GESTURE    0
-#define MSG_TYPE_BUTTON     1
-#define MSG_SLEEP           2
-#define MSG_WAKEUP          3
-#define MSG_BLE_CONNECTION  4
-#define MSG_TYPE_EVT        5
-#define MSG_TYPE_CHARGER    6
+#define MSG_TYPE_GESTURE    10
+#define MSG_TYPE_BUTTON     11
+#define MSG_SLEEP           12
+#define MSG_WAKEUP          13
+#define MSG_BLE_CONNECTION  14
+#define MSG_TYPE_EVT        15
+#define MSG_TYPE_CHARGER    16
+#define MSG_TYPE_ACCEL_RAW  17
 
 struct msg {
     unsigned long type;
@@ -26,13 +28,13 @@ struct screen_context {
 
 int msg_send_event(struct msg *m, unsigned long type, unsigned long event);
 
-int msg_send_data(struct msg *m, uint32_t type, void *data);
+int msg_send_data(uint32_t type, size_t size, void *data);
 
 int msg_send_gesture(uint32_t gesture);
 int msg_send_button(struct msg *m, uint32_t btn_event);
-int msg_send_data(struct msg *m, uint32_t type, void *data);
 
 extern struct view home;
 extern struct view clock_face_view;
+extern struct view date_settings;
 
 #endif /* _DISPLAY_H */

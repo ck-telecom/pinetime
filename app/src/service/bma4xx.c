@@ -5,6 +5,8 @@
 #include <math.h>
 
 #include "bma4.h"
+#include "display_api.h"
+#include "../event/event_service.h"
 
 #define BMA4XX_STACK_SIZE   1024
 #define BMA4XX_PRIORITY     5
@@ -32,6 +34,10 @@ static void bma421_handler(const struct device *dev,
 
 static void bma4xx_thread()
 {
+    struct sensor_value accel_data[3] = { 0 };
+    struct sensor_value ori[3] = { 0 };
+    double orientation[3] = { 0 };
+
     const struct device *dev = device_get_binding("BMA421");
     if (dev == NULL) {
         LOG_ERR("could not get BMA421 device");
@@ -50,10 +56,6 @@ static void bma4xx_thread()
     }
 
     while (1) {
-        struct sensor_value accel_data[3] = { 0 };
-        struct sensor_value ori[3] = { 0 };
-        double orientation[3] = { 0 };
-
         if (sensor_sample_fetch(dev) < 0) {
             LOG_ERR("sensor_sample_fetch error");
         }
@@ -63,6 +65,8 @@ static void bma4xx_thread()
         double x = sensor_value_to_double(&accel_data[0]);
         double y = sensor_value_to_double(&accel_data[1]);
         double z = sensor_value_to_double(&accel_data[2]);
+
+        msg_send_data(EventServiceCommandGeneric, sizeof(accel_data), accel_data);
 /*
         LOG_INF("sensor_channel_get accel.X %d.%d", accel_data[0].val1, accel_data[0].val2);
         LOG_INF("sensor_channel_get accel.Y %d.%d", accel_data[1].val1, accel_data[1].val2);

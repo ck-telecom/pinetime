@@ -17,13 +17,16 @@ target_sources(app PRIVATE src/service/display.c)
 target_sources(app PRIVATE src/service/touch.c)
 target_sources(app PRIVATE src/service/bma4xx.c)
 target_sources(app PRIVATE src/service/charger.c)
-target_sources(app PRIVATE src/service/event_service.c)
+#target_sources(app PRIVATE src/service/event_service.c)
 target_sources(app PRIVATE src/service/display_power.c)
+
+target_sources(app PRIVATE src/event/event_service.c)
+target_sources(app PRIVATE src/event/event_service_mem.c)
 
 target_sources(app PRIVATE src/backlight.c)
 target_sources(app PRIVATE src/battery.c)
 target_sources(app PRIVATE src/bt.c)
 target_sources(app PRIVATE src/screens/home.c)
 target_sources(app PRIVATE src/screens/clock_face.c)
-
+target_sources(app PRIVATE src/screens/date_settings.c)
 target_sources(app PRIVATE src/view.c)

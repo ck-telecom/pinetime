@@ -13,7 +13,7 @@
 #include "display_api.h"
 #include "display_power.h"
 #include "../view.h"
-//#include "../event/event_service.h"
+#include "../event/event_service.h"
 
 #define DISPLAY_STACK_SIZE      1024
 #define DISPLAY_PRIORITY        5
@@ -59,11 +59,20 @@ int msg_send_button(struct msg *m, uint32_t btn_event)
     return k_msgq_put(&event_msgq, m, K_NO_WAIT);
 }
 
-int msg_send_data(struct msg *m, uint32_t type, void *data)
+int msg_send_data(uint32_t type, size_t size, void *data)
 {
-    m->type = type;
-    m->data = data;
-    return k_msgq_put(&event_msgq, m, K_NO_WAIT);
+//    m->type = type;
+//    m->data = data;
+//    return k_msgq_put(&event_msgq, m, K_NO_WAIT);
+struct k_mbox_msg send_msg;
+
+send_msg.info = type;
+send_msg.size = size;
+send_msg.tx_data = data;
+send_msg.tx_block.data = NULL;
+send_msg.tx_target_thread = K_ANY;
+k_mbox_async_put(&display_mailbox, &send_msg, NULL);
+return 0;
 }
 
 static struct view *current_screen;
@@ -115,6 +124,12 @@ recv_msg.rx_source_thread = K_ANY;
                 display_event_handler(recv_msg.info, (void *)display_buffer);
                 break;
 
+            case MSG_TYPE_ACCEL_RAW:
+            case MSG_TYPE_EVT:
+            case EventServiceCommandGeneric:
+                event_service_event_trigger(recv_msg.info, display_buffer);
+                break;
+
             default:
                 break;
             }
@@ -132,9 +147,7 @@ recv_msg.rx_source_thread = K_ANY;
             display_gesure_handler(m.gesture);
             break;
 
-        case MSG_TYPE_EVT:
-            event_service_event_trigger(m.command, m.context, NULL);
-            break;
+
 
         case MSG_SLEEP:
             backlight_enable(false);

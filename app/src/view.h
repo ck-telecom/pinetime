@@ -1,7 +1,6 @@
 #ifndef _VIEW_H
 #define _VIEW_H
 
-#include <lvgl.h>
 #include <stdbool.h>
 
 struct msg;
@@ -55,5 +54,6 @@ void view_switch_screen(struct view *current_screen, struct view *new_screen);
 
 #define HOME_ID         0
 #define CLOCK_FACE_ID   1
+#define DATE_SETTINGS_ID 2
 
 #endif /* _VIEW_H */

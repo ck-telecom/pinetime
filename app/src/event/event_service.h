@@ -28,8 +28,8 @@ void *event_service_get_context(EventServiceCommand command);
 
 void event_service_set_context(EventServiceCommand command, void *context);
 
-bool event_service_post(EventServiceCommand command, void *data, DestroyEventProc destroy_callback);
+bool event_service_post(EventServiceCommand command, void *data/*, DestroyEventProc destroy_callback*/);
 
-void event_service_event_trigger(EventServiceCommand command, void *data, DestroyEventProc destroy_callback);
+void event_service_event_trigger(EventServiceCommand command, void *data/*, DestroyEventProc destroy_callback*/);
 
 #endif /* _EVENT_SERVICE_H */
