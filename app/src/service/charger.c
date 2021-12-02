@@ -3,7 +3,7 @@
 #include <drivers/gpio.h>
 #include <logging/log.h>
 
-#include "display.h"
+#include "display_api.h"
 
 #define CHARGER_PIN     DT_GPIO_PIN(DT_ALIAS(charger), gpios)
 

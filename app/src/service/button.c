@@ -3,7 +3,7 @@
 #include <logging/log.h>
 
 #include "button.h"
-#include "display.h"
+#include "display_api.h"
 
 #define BUTTON_STACK_SIZE 1024
 #define BUTTON_PRIORITY 5

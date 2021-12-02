@@ -1,7 +1,7 @@
 #include <lvgl.h>
 
 #include "../view.h"
-#include "../service/display.h"
+#include "../service/display_api.h"
 
 #if 1
 LV_FONT_DECLARE(lv_font_montserrat_16);

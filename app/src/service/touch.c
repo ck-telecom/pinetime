@@ -4,7 +4,7 @@
 #include <logging/log.h>
 #include <lvgl.h>
 #include "cst816s.h"
-#include "display.h"
+#include "display_api.h"
 
 #define TOUCH_STACK_SIZE    1024
 #define TOUCH_PRIORITY      5

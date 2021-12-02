@@ -10,7 +10,8 @@
 #include <lvgl.h>
 #include <logging/log.h>
 
-#include "display.h"
+#include "display_api.h"
+#include "display_power.h"
 #include "../view.h"
 //#include "../event/event_service.h"
 
@@ -20,6 +21,9 @@
 K_MSGQ_DEFINE(event_msgq, sizeof(struct msg), 10, 4);
 K_MBOX_DEFINE(display_mailbox);
 uint8_t buf[4] = {0x3F, 0, 0, 0};
+
+struct screen_context context;
+
 LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
 
 int msg_send_event(struct msg *m, unsigned long type, unsigned long event)
@@ -74,7 +78,7 @@ static uint8_t display_buffer[1024];
 
 void display_thread(void* arg1, void *arg2, void *arg3)
 {
-//    struct msg m;
+    struct screen_context *context = (struct screen_context*)arg1;
     int ret;
     const struct device *display_dev;
     k_timeout_t timeout = K_MSEC(10);
@@ -86,6 +90,7 @@ struct k_mbox_msg recv_msg;
         return;
     }
     display_blanking_off(display_dev);
+    context->display_on = true;
 
 current_screen = &home;
 view_init(current_screen, lv_scr_act());
@@ -101,6 +106,12 @@ recv_msg.rx_source_thread = K_ANY;
             switch (recv_msg.info) {
             case MSG_TYPE_GESTURE:
             case MSG_TYPE_BUTTON:
+                if (context->display_on == false) {
+                    display_power_wakeup();
+                    backlight_enable(true);
+                    timeout = K_MSEC(10);
+                    context->display_on = true;
+                }
                 display_event_handler(recv_msg.info, (void *)display_buffer);
                 break;
 
@@ -151,7 +162,17 @@ recv_msg.rx_source_thread = K_ANY;
         }
 */
         lv_task_handler();
+        uint32_t inactive_time = lv_disp_get_inactive_time(NULL);
+        if (inactive_time >= 9/*CONFIG_SCREEN_TIMEOUT*/) {
+            LOG_INF("screen off after timeout");
+            /* turn screen off */
+            context->display_on = false;
+            //hal_display_off();
+            backlight_enable(false);
+            display_power_sleep();
+            timeout = K_FOREVER;
+        }
     }
 }
 
-K_THREAD_DEFINE(dispaly, DISPLAY_STACK_SIZE, display_thread, NULL, NULL, NULL, DISPLAY_PRIORITY, 0, 0);
+K_THREAD_DEFINE(dispaly, DISPLAY_STACK_SIZE, display_thread, &context, NULL, NULL, DISPLAY_PRIORITY, 0, 0);
