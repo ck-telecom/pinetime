@@ -98,7 +98,7 @@ static uint8_t button_check_time()
             if (now > button->press_time + button->click_config.long_click.delay_ms) {
                 button->state = BUTTON_STATE_LONG;
                 LOG_INF("button long pressed");
-                button->click_config.long_click..handler(NULL, NULL);
+                button->click_config.long_click.handler(NULL, NULL);
                 button->press_time = 0;
                 button->repeat_time = 0;
             }
