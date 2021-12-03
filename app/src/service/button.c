@@ -39,6 +39,7 @@ static void button_pressed(struct button_handle *handle)
     handle->repeat_time = handle->press_time;
     if (handle->click_config.single_click.down_handler) {
         LOG_INF("button pressed");
+        handle->click_config.single_click.down_handler(NULL, NULL);
     }
 
     handle->state = BUTTON_STATE_PRESSED;
@@ -51,6 +52,7 @@ static void button_released(struct button_handle *handle)
 
     if (handle->click_config.single_click.up_handler) {
         LOG_INF("button released");
+        handle->click_config.single_click.up_handler(NULL, NULL);
     }
     handle->repeat_time = 0;
     handle->press_time = 0;
@@ -96,6 +98,7 @@ static uint8_t button_check_time()
             if (now > button->press_time + button->click_config.long_click.delay_ms) {
                 button->state = BUTTON_STATE_LONG;
                 LOG_INF("button long pressed");
+                button->click_config.long_click..handler(NULL, NULL);
                 button->press_time = 0;
                 button->repeat_time = 0;
             }
