@@ -18,34 +18,6 @@
 LOG_MODULE_DECLARE(BMA421, CONFIG_SENSOR_LOG_LEVEL);
 
 #ifdef CONFIG_BMA421_TRIGGER
-
-int bma421_attr_set(const struct device *dev,
-			enum sensor_channel chan,
-			enum sensor_attribute attr,
-			const struct sensor_value *val)
-{
-//	struct bma421_data *drv_data = dev->data;
-
-//uint8_t buf[BMA421_FEATURE_SIZE];
-//default anymotion is selected
-//todo set any parameter eg stepcounter, tap double tap, wrist tilt etc
-// if (i2c_burst_read(drv_data->i2c, BMA421_I2C_ADDRESS, BMA421_REG_FEATURE, buf, BMA421_FEATURE_SIZE) < 0) {}
-
-	if (chan != SENSOR_CHAN_ACCEL_XYZ) {
-		return -ENOTSUP;
-	}
-//0x5E features register burst read
-/*	if (attr == SENSOR_ATTR_SLOPE_TH) {
-		}
-	} else if (attr == SENSOR_ATTR_SLOPE_DUR) {
-		}
-	} else {
-		return -ENOTSUP;
-	}
-*/
-	return 0;
-}
-
 static void bma421_gpio_callback(const struct device *dev,
 				 struct gpio_callback *cb, uint32_t pins)
 {

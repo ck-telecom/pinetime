@@ -144,9 +144,58 @@ static int bma421_channel_get(const struct device *dev,
 	return 0;
 }
 
+int bma421_attr_set(const struct device *dev,
+			enum sensor_channel chan,
+			enum sensor_attribute attr,
+			const struct sensor_value *val)
+{
+	int ret;
+	struct bma421_data *drv_data = dev->data;
+	struct bma4_dev *bma_dev = &drv_data->bma_dev;
+	struct bma4_accel_config accel_conf = { 0 };
+
+	if (chan != SENSOR_CHAN_ACCEL_XYZ) {
+		return -ENOTSUP;
+	}
+	switch (attr) {
+	case SENSOR_ATTR_SAMPLING_FREQUENCY:
+		ret = bma4_get_accel_config(&accel_conf, bma_dev);
+		if (ret != BMA4_OK) {
+			LOG_ERR("Failed to get Acceleration config err %d", ret);
+			return ret;
+		}
+		accel_conf.odr = val->val1;
+		ret = bma4_set_accel_config(&accel_conf, bma_dev);
+		if (ret != BMA4_OK) {
+			LOG_ERR("Failed to set Acceleration config err %d", ret);
+			return ret;
+		}
+		break;
+
+	case SENSOR_ATTR_FULL_SCALE:
+		ret = bma4_get_accel_config(&accel_conf, bma_dev);
+		if (ret != BMA4_OK) {
+			LOG_ERR("Failed to get Acceleration config err %d", ret);
+			return ret;
+		}
+		accel_conf.range = val->val1;
+		ret = bma4_set_accel_config(&accel_conf, bma_dev);
+		if (ret != BMA4_OK) {
+			LOG_ERR("Failed to set Acceleration config err %d", ret);
+			return ret;
+		}
+		break;
+
+	default:
+		break;
+    }
+
+	return 0;
+}
+
 static const struct sensor_driver_api bma421_driver_api = {
-#if CONFIG_BMA421_TRIGGER
 	.attr_set = bma421_attr_set,
+#if CONFIG_BMA421_TRIGGER
 	.trigger_set = bma421_trigger_set,
 #endif
 	.sample_fetch = bma421_sample_fetch,
