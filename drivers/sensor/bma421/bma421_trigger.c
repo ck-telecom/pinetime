@@ -174,9 +174,10 @@ int bma421_init_interrupt(const struct device *dev)
 			bma421_gpio_callback,
 			BIT(cfg->drdy_pin));
 
-	if (gpio_add_callback(drv_data->gpio, &drv_data->gpio_cb) < 0) {
+	ret = gpio_add_callback(drv_data->gpio, &drv_data->gpio_cb);
+	if (ret < 0) {
 		LOG_ERR("Could not set gpio callback");
-		return -EIO;
+		return ret;
 	}
 
 	ret = gpio_pin_interrupt_configure(drv_data->gpio, cfg->drdy_pin, GPIO_INT_EDGE_TO_ACTIVE);
@@ -221,8 +222,8 @@ int bma421_init_interrupt(const struct device *dev)
 	drv_data->work.handler = bma421_work_cb;
 	drv_data->dev = dev;
 #endif
-
-	return 0;
+	LOG_INF("bma421 trigger init done");
+	return ret;
 }
 
 #endif
