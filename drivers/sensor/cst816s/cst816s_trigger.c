@@ -11,29 +11,13 @@
 #include <sys/util.h>
 #include <kernel.h>
 #include <drivers/sensor.h>
+#include <logging/log.h>
 
 #include "cst816s.h"
 
-#include <logging/log.h>
-
-#define INTERRUPT_PIN 	DT_INST_GPIO_PIN(0, irq_gpios)
-
 LOG_MODULE_DECLARE(CST816S, CONFIG_SENSOR_LOG_LEVEL);
 
-int cst816s_attr_set(const struct device *dev,
-		enum sensor_channel chan,
-		enum sensor_attribute attr,
-		const struct sensor_value *val)
-{
-	//struct cst816s_data *drv_data = dev->driver_data;
-
-	if (chan != SENSOR_CHAN_ACCEL_XYZ) {
-		return -ENOTSUP;
-	}
-
-	return 0;
-}
-
+#ifdef CONFIG_CST816S_TRIGGER
 static void cst816s_gpio_callback(const struct device *dev,
 		struct gpio_callback *cb, uint32_t pins)
 {
@@ -102,32 +86,39 @@ int cst816s_trigger_set(const struct device *dev,
 int cst816s_init_interrupt(const struct device *dev)
 {
 	struct cst816s_data *drv_data = dev->data;
+	const struct cst816s_config *cfg = dev->config;
+	int ret;
 
-#if DT_INST_NODE_HAS_PROP(0, irq_gpios)
 	/* setup data ready gpio interrupt */
 	drv_data->gpio = device_get_binding(DT_INST_GPIO_LABEL(0, irq_gpios));
 	if (drv_data->gpio == NULL) {
-		LOG_DBG("Cannot get pointer to %s device",
+		LOG_ERR("Cannot get pointer to %s device",
 				DT_INST_GPIO_LABEL(0, irq_gpios));
 		return -EINVAL;
 	}
 
-	gpio_pin_configure(drv_data->gpio,
-				INTERRUPT_PIN, GPIO_INPUT | GPIO_PULL_UP
-				 | GPIO_ACTIVE_LOW);
+	ret = gpio_pin_configure(drv_data->gpio, cfg->drdy_pin,
+				GPIO_INPUT | cfg->drdy_flags);
+	if (ret) {
+		return ret;
+	}
 
 	gpio_init_callback(&drv_data->gpio_cb,
 			cst816s_gpio_callback,
-			BIT(INTERRUPT_PIN));
+			BIT(cfg->drdy_pin));
 
-	if (gpio_add_callback(drv_data->gpio, &drv_data->gpio_cb) < 0) {
-		LOG_DBG("Could not set gpio callback");
-		return -EIO;
+	ret = gpio_add_callback(drv_data->gpio, &drv_data->gpio_cb);
+	if (ret < 0) {
+		LOG_ERR("Could not set gpio callback");
+		return ret;
 	}
 
-	gpio_pin_interrupt_configure(drv_data->gpio,
-			INTERRUPT_PIN, GPIO_INT_EDGE_TO_ACTIVE);
-#endif
+	ret = gpio_pin_interrupt_configure(drv_data->gpio,
+			cfg->drdy_pin, GPIO_INT_EDGE_TO_ACTIVE);
+	if (ret < 0) {
+		return ret;
+	}
+
 #if defined(CONFIG_CST816S_TRIGGER_OWN_THREAD)
 	k_sem_init(&drv_data->gpio_sem, 0, UINT_MAX);
 
@@ -140,5 +131,6 @@ int cst816s_init_interrupt(const struct device *dev)
 	drv_data->work.handler = cst816s_work_cb;
 	drv_data->dev = dev;
 #endif
-	return 0;
+	return ret;
 }
+#endif /* CONFIG_CST816S_TRIGGER */

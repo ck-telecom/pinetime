@@ -102,9 +102,23 @@ static int cst816s_channel_get(const struct device *dev,
 	return 0;
 }
 
+int cst816s_attr_set(const struct device *dev,
+		enum sensor_channel chan,
+		enum sensor_attribute attr,
+		const struct sensor_value *val)
+{
+	//struct cst816s_data *drv_data = dev->driver_data;
+
+	if (chan != SENSOR_CHAN_ACCEL_XYZ) {
+		return -ENOTSUP;
+	}
+
+	return 0;
+}
+
 static const struct sensor_driver_api cst816s_driver_api = {
-#if CONFIG_CST816S_TRIGGER
 	.attr_set = cst816s_attr_set,
+#if CONFIG_CST816S_TRIGGER
 	.trigger_set = cst816s_trigger_set,
 #endif
 	.sample_fetch = cst816s_sample_fetch,
@@ -125,27 +139,38 @@ static int cst816s_chip_init(const struct device *dev)
 {
 	const struct cst816s_config *cfg = dev->config;
 	struct cst816s_data *drv_data = dev->data;
+	int ret;
+	uint8_t value = 0;
 
 	cst816s_chip_reset(dev);
 
-	if (i2c_reg_read_byte(drv_data->i2c, cfg->i2c_addr,
-			CST816S_REG_CHIP_ID, &drv_data->chip_id) < 0) {
+	ret = i2c_reg_read_byte(drv_data->i2c, cfg->i2c_addr,
+				CST816S_REG_CHIP_ID, &drv_data->chip_id);
+	if (ret < 0) {
 		LOG_ERR("failed reading chip id");
-		return -EIO;
+		return ret;
 	}
 
 	if (drv_data->chip_id != CST816S_CHIP_ID) {
 		LOG_ERR("CST816S wrong chip id: returned 0x%x", drv_data->chip_id);
+		return -ENODEV;
 	}
 
-	if (i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
+	ret = i2c_reg_update_byte(drv_data->i2c, cfg->i2c_addr,
 				CST816S_REG_MOTION_MASK,
-				(CST816S_MOTION_EN_DCLICK), (CST816S_MOTION_EN_DCLICK)) < 0) {
+				(CST816S_MOTION_EN_DCLICK), (CST816S_MOTION_EN_DCLICK));
+	if (ret < 0) {
 		LOG_ERR("Could not enable double click");
-		return -EIO;
+		return ret;
 	}
 
-	return 0;
+	ret = i2c_reg_read_byte(drv_data->i2c, cfg->i2c_addr, CST816S_REG_IRQ_CTL, &value);
+	if (ret < 0) {
+		return ret;
+	}
+	LOG_INF("val: 0x%x", value);
+
+	return ret;
 }
 
 int cst816s_init(const struct device *dev)
