@@ -140,7 +140,6 @@ static int cst816s_chip_init(const struct device *dev)
 	const struct cst816s_config *cfg = dev->config;
 	struct cst816s_data *drv_data = dev->data;
 	int ret;
-	uint8_t value = 0;
 
 	cst816s_chip_reset(dev);
 
@@ -163,12 +162,6 @@ static int cst816s_chip_init(const struct device *dev)
 		LOG_ERR("Could not enable double click");
 		return ret;
 	}
-
-	ret = i2c_reg_read_byte(drv_data->i2c, cfg->i2c_addr, CST816S_REG_IRQ_CTL, &value);
-	if (ret < 0) {
-		return ret;
-	}
-	LOG_INF("val: 0x%x", value);
 
 	return ret;
 }
@@ -206,15 +199,16 @@ int cst816s_init(const struct device *dev)
 	}
 
 #ifdef CONFIG_CST816S_TRIGGER
-	if (cst816s_init_interrupt(dev) < 0) {
-		LOG_DBG("Could not initialize interrupts");
-		return -EIO;
+	retval = cst816s_init_interrupt(dev);
+	if (retval < 0) {
+		LOG_ERR("Could not initialize interrupts");
+		return retval;
 	}
 #endif
 	return 0;
 }
 
-static const struct cst816s_config cst816s_cfg = {
+static const struct cst816s_config cst816s_cfg0 = {
 	.i2c_bus = DT_INST_BUS_LABEL(0),
 	.i2c_addr = DT_INST_REG_ADDR(0),
 #if CONFIG_CST816S_TRIGGER
@@ -224,8 +218,8 @@ static const struct cst816s_config cst816s_cfg = {
 #endif
 };
 
-struct cst816s_data cst816s_driver;
+static struct cst816s_data cst816s_data0;
 
 DEVICE_DT_INST_DEFINE(0, cst816s_init, NULL,
-		&cst816s_driver, &cst816s_cfg, POST_KERNEL,
+		&cst816s_data0, &cst816s_cfg0, POST_KERNEL,
 		CONFIG_SENSOR_INIT_PRIORITY, &cst816s_driver_api);
