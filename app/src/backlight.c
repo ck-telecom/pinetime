@@ -1,3 +1,4 @@
+#if 0
 #include <stdbool.h>
 #include <drivers/gpio.h>
 
@@ -30,5 +31,33 @@ int backlight_enable(bool enable)
 
     return 0;
 }
+#else
+#include <drivers/led.h>
+
+#include "backlight.h"
+
+static const struct device* backlight_dev;
+
+#if DT_NODE_HAS_STATUS(DT_INST(0, pwm_leds), okay)
+#define LED_PWM_NODE_ID		DT_INST(0, pwm_leds)
+#define LED_PWM_DEV_NAME	DEVICE_DT_NAME(LED_PWM_NODE_ID)
+#else
+#error "No LED PWM device found"
+#endif
+
+static int backlight_init(const struct device *dev)
+{
+    backlight_dev = device_get_binding(LED_PWM_DEV_NAME);
+
+    led_set_brightness(backlight_dev, 0, 100);
+
+    return 0;
+}
+
+int backlight_enable(bool enable)
+{
+    return 0;
+}
+#endif
 
 SYS_INIT(backlight_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
