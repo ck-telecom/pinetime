@@ -56,7 +56,16 @@ static int backlight_init(const struct device *dev)
 
 int backlight_enable(bool enable)
 {
-    return 0;
+    if (enable) {
+        return led_on(backlight_dev, 0);
+    } else {
+        return led_off(backlight_dev, 0);
+    }
+}
+
+int backlight_set_brighness(uint8_t value)
+{
+    return led_set_brightness(backlight_dev, 0, value);
 }
 #endif
 
