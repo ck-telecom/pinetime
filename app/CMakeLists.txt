@@ -24,8 +24,8 @@ target_sources(app PRIVATE src/service/backlight.c)
 target_sources(app PRIVATE src/event/event_service.c)
 target_sources(app PRIVATE src/event/event_service_mem.c)
 
+target_sources(app PRIVATE src/bluetooth/bt.c)
 
-target_sources(app PRIVATE src/bt.c)
 target_sources(app PRIVATE src/screens/home.c)
 target_sources(app PRIVATE src/screens/clock_face.c)
 target_sources(app PRIVATE src/screens/date_settings.c)
