@@ -1,6 +1,8 @@
 #include <drivers/adc.h>
 #include <logging/log.h>
 
+#include <hal/nrf_saadc.h>
+
 #define CHANNEL_ID 7
 #define RESOLUTION 12
 #define DIVIDER 2
@@ -14,10 +16,11 @@ static const struct device* percentage_dev;
 static const struct adc_channel_cfg m_1st_channel_cfg = {
     .gain             = ADC_GAIN_1_4,
     .reference        = ADC_REF_INTERNAL,
-    .acquisition_time = ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 20),
+    .acquisition_time = ADC_ACQ_TIME(ADC_ACQ_TIME_MICROSECONDS, 40),
     .channel_id       = CHANNEL_ID,
+    .differential     = 0,
 #if defined(CONFIG_ADC_CONFIGURABLE_INPUTS)
-    .input_positive   = 8,
+    .input_positive   = NRF_SAADC_INPUT_AIN7,
 #endif
 };
 
