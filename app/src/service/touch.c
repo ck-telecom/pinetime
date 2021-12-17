@@ -18,6 +18,7 @@ K_MSGQ_DEFINE(kscan_msgq, sizeof(lv_indev_data_t),
 
 static bool lvgl_indev_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data)
 {
+#if 0
     lv_indev_data_t curr;
 
     static lv_indev_data_t prev = {
@@ -37,15 +38,35 @@ set_and_release:
     *data = prev;
 
     return k_msgq_num_used_get(&kscan_msgq) > 0;
+#else
+    const struct device *dev = drv->user_data;
+    if (sensor_sample_fetch(dev) < 0) {
+        LOG_ERR("Touch sample update error.");
+    }
+
+    struct sensor_value state;
+    struct sensor_value touch_point;
+
+    sensor_channel_get(dev, CST816S_CHAN_TOUCH_POINT_1, &touch_point);
+
+    sensor_channel_get(dev, CST816S_CHAN_STATE, &state);
+
+    data->point.x = touch_point.val1;
+    data->point.y = touch_point.val2;
+    data->state = (state.val1 == UP) ? LV_INDEV_STATE_REL : LV_INDEV_STATE_PR;
+
+    return false;
+#endif
 }
 
-static int lvgl_indev_init(void)
+static int lvgl_indev_init(void *dev)
 {
     lv_indev_drv_t indev_drv;
 
     lv_indev_drv_init(&indev_drv);
     indev_drv.type = LV_INDEV_TYPE_POINTER;
     indev_drv.read_cb = lvgl_indev_read_cb;
+    indev_drv.user_data = (void *)dev;
 
     if (lv_indev_drv_register(&indev_drv) == NULL) {
         LOG_ERR("Failed to register input device.");
@@ -96,6 +117,7 @@ int touch_init(const struct device *dev)
         LOG_ERR("could get %s device", TOUCH_DEV);
         return -ENODEV;
     }
+#if 0
     if (IS_ENABLED(CONFIG_CST816S_TRIGGER)) {
         struct sensor_trigger trig = {
             .type = SENSOR_TRIG_DATA_READY,
@@ -106,8 +128,8 @@ int touch_init(const struct device *dev)
             return -ENOTSUP;
         }
     }
-
-    return 0;//lvgl_indev_init();
+#endif
+    return lvgl_indev_init((void *)touch_dev);
 }
 SYS_INIT(touch_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 

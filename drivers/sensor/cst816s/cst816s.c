@@ -95,6 +95,8 @@ static int cst816s_channel_get(const struct device *dev,
 	} else if ((uint16_t)chan == CST816S_CHAN_TOUCH_POINT_2) {
 		val->val1=drv_data->touch_point_2.x;
 		val->val2=drv_data->touch_point_2.y;
+    } else if ((uint16_t)chan == CST816S_CHAN_STATE) {
+		val->val1 = drv_data->action;
 	} else {
 		return -ENOTSUP;
 	}
