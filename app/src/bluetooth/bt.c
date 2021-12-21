@@ -4,6 +4,7 @@
 #include <logging/log.h>
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/conn.h>
+#include <settings/settings.h>
 
 //#define LOG_LEVEL LOG_LEVEL_DBG
 LOG_MODULE_REGISTER(BT_APP, LOG_LEVEL_INF);
@@ -37,6 +38,43 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
     .le_param_req = le_param_req,
     .le_param_updated = le_param_updated,
 };
+
+static int settings_runtime_load(void)
+{
+#if defined(CONFIG_BT_DIS_SETTINGS)
+#if defined(CONFIG_BT_DIS_MODEL)
+	settings_runtime_set("bt/dis/model",
+			     CONFIG_BT_DIS_MODEL,
+			     sizeof(CONFIG_BT_DIS_MODEL));
+#endif
+#if defined(CONFIG_BT_DIS_MANUF)
+	settings_runtime_set("bt/dis/manuf",
+			     CONFIG_BT_DIS_MANUF,
+			     sizeof(CONFIG_BT_DIS_MANUF));
+#endif
+#if defined(CONFIG_BT_DIS_SERIAL_NUMBER)
+	settings_runtime_set("bt/dis/serial",
+			     CONFIG_BT_DIS_SERIAL_NUMBER_STR,
+			     sizeof(CONFIG_BT_DIS_SERIAL_NUMBER_STR));
+#endif
+#if defined(CONFIG_BT_DIS_SW_REV)
+	settings_runtime_set("bt/dis/sw",
+			     CONFIG_BT_DIS_SW_REV_STR,
+			     sizeof(CONFIG_BT_DIS_SW_REV_STR));
+#endif
+#if defined(CONFIG_BT_DIS_FW_REV)
+	settings_runtime_set("bt/dis/fw",
+			     CONFIG_BT_DIS_FW_REV_STR,
+			     sizeof(CONFIG_BT_DIS_FW_REV_STR));
+#endif
+#if defined(CONFIG_BT_DIS_HW_REV)
+	settings_runtime_set("bt/dis/hw",
+			     CONFIG_BT_DIS_HW_REV_STR,
+			     sizeof(CONFIG_BT_DIS_HW_REV_STR));
+#endif
+#endif
+	return 0;
+}
 
 static void advertise(struct k_work *work)
 {
@@ -84,6 +122,15 @@ static int bt_init(const struct device *dev)
         return err;
     }
 
+    err = settings_load();
+    if (err) {
+        LOG_ERR("Settings load failed (err %d)", err);
+    }
+
+    err = settings_runtime_load();
+    if (err) {
+        LOG_ERR("Settings runtime load failed (err %d)", err);
+    }
     k_work_init(&advertise_work, advertise);
     k_work_submit(&advertise_work);
     LOG_INF("Bluetooth initialized");
