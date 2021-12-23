@@ -1,9 +1,12 @@
 #include <zephyr.h>
-#include <drivers/gpio.h>
+#include <init.h>
 
 #include <logging/log.h>
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/conn.h>
+#include <bluetooth/uuid.h>
+#include <bluetooth/gatt.h>
+#include <bluetooth/gap.h>
 #include <settings/settings.h>
 
 //#define LOG_LEVEL LOG_LEVEL_DBG
@@ -18,12 +21,10 @@ static struct k_work advertise_work;
 
 static const struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-    /* Device information */
     BT_DATA_BYTES(BT_DATA_UUID16_ALL,
-              0x0a, 0x18),
-    /* Current time */
-    BT_DATA_BYTES(BT_DATA_UUID16_ALL,
-              0x05, 0x18),
+                  BT_UUID_16_ENCODE(BT_UUID_DIS_VAL),
+                  BT_UUID_16_ENCODE(BT_UUID_CTS_CURRENT_TIME_VAL),
+                 ),
 #ifdef CONFIG_MCUMGR
     /* SMP */
     BT_DATA_BYTES(BT_DATA_UUID128_ALL,
@@ -96,6 +97,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
     if (err) {
         return;
     }
+
     LOG_INF("connected");
 }
 
