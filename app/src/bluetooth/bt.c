@@ -77,6 +77,65 @@ static int settings_runtime_load(void)
 	return 0;
 }
 
+static struct bt_gatt_discover_params cts_discovery_params;
+static struct bt_uuid_16 uuid = BT_UUID_INIT_16(0);
+static struct bt_gatt_read_params read_params;
+int offset = 0;
+//cts_datetime_t datetime_buf;
+
+uint8_t cts_sync_read(struct bt_conn *conn, uint8_t err,
+				    struct bt_gatt_read_params *params,
+				    const void *data, uint16_t length)
+{
+    LOG_DBG("Reading CCC data: err %d, %d bytes, offset %d.", err, length, offset);
+
+    if (!data || length <= 0) {
+        //sync_cts_to_clock(&datetime_buf);
+        return BT_GATT_ITER_STOP;
+    }
+
+    //memcpy(&datetime_buf + offset, data, length);
+    offset += length;
+
+    return BT_GATT_ITER_CONTINUE;
+}
+
+uint8_t cts_sync_service_discovered(struct bt_conn* conn, const struct bt_gatt_attr* attr,
+        struct bt_gatt_discover_params* params)
+{
+    if (!attr) {
+        LOG_DBG("CTS Service Discovery completed");
+        return BT_GATT_ITER_STOP;
+    }
+    LOG_DBG("Discovered attribute, handle: %u\n", attr->handle);
+
+    memset(&read_params, 0, sizeof(read_params));
+    read_params.func = cts_sync_read;
+    read_params.by_uuid.uuid = &uuid.uuid;
+    read_params.by_uuid.start_handle = attr->handle;
+    read_params.by_uuid.end_handle = 0xffff;
+    offset = 0;
+    if (bt_gatt_read(conn, &read_params) < 0) {
+        LOG_WRN("Could not initiate read of CCC data.");
+    }
+
+    return BT_GATT_ITER_STOP;
+}
+
+static void cts_sync_processor(struct bt_conn *conn, void *data)
+{
+    memcpy(&uuid, BT_UUID_CTS_CURRENT_TIME, sizeof(uuid));
+    cts_discovery_params.func = cts_sync_service_discovered;
+    cts_discovery_params.start_handle = 0x0001;
+    cts_discovery_params.end_handle = 0xFFFF;
+    cts_discovery_params.type = BT_GATT_DISCOVER_CHARACTERISTIC;
+    cts_discovery_params.uuid = &uuid.uuid;
+
+    if (bt_gatt_discover(conn, &cts_discovery_params) != 0) {
+        LOG_ERR("CTS Sync > GATT discovery FAILED.\n");
+    }
+}
+
 static void advertise(struct k_work *work)
 {
     int rc;
@@ -99,6 +158,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
     }
 
     LOG_INF("connected");
+    // cts_sync_processor(conn, NULL);
 }
 
 static void disconnected(struct bt_conn *conn, uint8_t reason)
