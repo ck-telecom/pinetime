@@ -238,7 +238,7 @@ int bma421_init_driver(const struct device *dev)
 		LOG_ERR("BMA4 init error:%d", ret);
 		return ret;
 	}
-/*
+
 	ret = bma421_write_config_file(bma_dev);
 	if (ret != BMA4_OK) {
 		LOG_ERR("bma421_write_config_file failed err %d", ret);
@@ -256,7 +256,7 @@ int bma421_init_driver(const struct device *dev)
 		LOG_ERR("bma421_step_detector_enable failed err %d", ret);
 		return ret;
 	}
-*/
+
 	struct bma4_accel_config accel_conf = { 0 };
 	accel_conf.odr = BMA4_OUTPUT_DATA_RATE_100HZ;
 	accel_conf.range = BMA4_ACCEL_RANGE_2G;

@@ -27,6 +27,10 @@
 	};
 };
 
+&i2c0 {
+	zephyr,concat-buf-size = <32>;
+};
+
 &mx25l {
 	compatible = "mxicy,cmos-mx25l", "jedec,spi-nor";
 	jedec-id = [0b 40 16];
