@@ -128,31 +128,27 @@ int bma421_init_interrupt(const struct device *dev)
 	struct bma4_dev *bma_dev = &drv_data->bma_dev;
 	int8_t ret;
 
-	/* setup data ready gpio interrupt */
-	drv_data->gpio = device_get_binding(cfg->drdy_controller);
-	if (drv_data->gpio == NULL) {
-		LOG_ERR("Cannot get pointer to %s device",
-			cfg->drdy_controller);
-		return -EINVAL;
+	if (!device_is_ready(cfg->int1_gpio.port)) {
+		LOG_ERR("GPIO device %s not ready", cfg->int1_gpio.port->name);
+		return -ENODEV;
 	}
 
-	ret = gpio_pin_configure(drv_data->gpio, cfg->drdy_pin,
-				GPIO_INPUT | cfg->drdy_flags);
+	ret = gpio_pin_configure_dt(&cfg->int1_gpio, GPIO_INPUT);
 	if (ret < 0) {
 		return ret;
 	}
 
 	gpio_init_callback(&drv_data->gpio_cb,
 			bma421_gpio_callback,
-			BIT(cfg->drdy_pin));
+			BIT(cfg->int1_gpio.pin));
 
-	ret = gpio_add_callback(drv_data->gpio, &drv_data->gpio_cb);
+	ret = gpio_add_callback(cfg->int1_gpio.port, &drv_data->gpio_cb);
 	if (ret < 0) {
 		LOG_ERR("Could not set gpio callback");
 		return ret;
 	}
 
-	ret = gpio_pin_interrupt_configure(drv_data->gpio, cfg->drdy_pin, GPIO_INT_EDGE_TO_ACTIVE);
+	ret = gpio_pin_interrupt_configure_dt(&cfg->int1_gpio, GPIO_INT_EDGE_TO_ACTIVE);
 	if (ret < 0) {
 		return ret;
 	}

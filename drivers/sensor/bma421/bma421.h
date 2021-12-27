@@ -63,7 +63,6 @@
 #define BMA421_THREAD_STACKSIZE_UNIT    1024
 
 struct bma421_data {
-	const struct device *i2c;
 	struct bma4_accel accel;
 	int32_t temperature;
 	struct bma4_dev bma_dev;
@@ -104,12 +103,9 @@ int bma421_init_interrupt(const struct device *dev);
 #endif
 
 struct bma421_config {
-	const char *i2c_bus;
-	uint16_t i2c_addr;
+	struct i2c_dt_spec i2c;
 #if CONFIG_BMA421_TRIGGER
-	gpio_pin_t drdy_pin;
-	gpio_flags_t drdy_flags;
-	const char *drdy_controller;
+	const struct gpio_dt_spec int1_gpio;
 #endif /* CONFIG_BMA421_TRIGGER */
 };
 

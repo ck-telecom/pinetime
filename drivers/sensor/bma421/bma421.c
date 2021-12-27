@@ -5,11 +5,9 @@
 
 #define DT_DRV_COMPAT bosch_bma4xx
 
-#include <device.h>
 #include <drivers/i2c.h>
-#include <init.h>
+#include <drivers/gpio.h>
 #include <drivers/sensor.h>
-#include <sys/__assert.h>
 #include <logging/log.h>
 
 #include "bma4.h"
@@ -24,9 +22,8 @@ static int8_t user_i2c_read(uint8_t reg_addr, uint8_t* reg_data, uint32_t length
 	int8_t ret;
 	const struct device *dev = intf_ptr;
 	const struct bma421_config *cfg = dev->config;
-	struct bma421_data *drv_data = dev->data;
 
-	ret = i2c_burst_read(drv_data->i2c, cfg->i2c_addr, reg_addr, reg_data, length);
+	ret = i2c_burst_read_dt(&cfg->i2c, reg_addr, reg_data, length);
 	if (ret < 0) {
 		LOG_ERR("i2c_burst_read error %d", ret);
 		return ret;
@@ -39,9 +36,8 @@ static int8_t user_i2c_write(uint8_t reg_addr, const uint8_t* reg_data, uint32_t
 	int8_t ret;
 	const struct device *dev = intf_ptr;
 	const struct bma421_config *cfg = dev->config;
-	struct bma421_data *drv_data = dev->data;
 
-	ret = i2c_burst_write(drv_data->i2c, cfg->i2c_addr, reg_addr, reg_data, length);
+	ret = i2c_burst_write_dt(&cfg->i2c, reg_addr, reg_data, length);
 	if (ret < 0) {
 		LOG_ERR("i2c_burst_write error %d", ret);
 		return ret;
@@ -209,11 +205,9 @@ int bma421_init_driver(const struct device *dev)
 	struct bma4_dev *bma_dev = &drv_data->bma_dev;
 	int8_t ret = 0;
 
-	drv_data->i2c = device_get_binding(cfg->i2c_bus);
-	if (drv_data->i2c == NULL) {
-		LOG_ERR("Could not get pointer to %s device",
-				cfg->i2c_bus);
-		return -EINVAL;
+	if (!device_is_ready(cfg->i2c.bus)) {
+		LOG_ERR("I2C bus %s not ready", cfg->i2c.bus->name);
+		return -ENODEV;
 	}
 
 	memset(bma_dev, 0, sizeof(struct bma4_dev));
@@ -289,18 +283,15 @@ int bma421_init_driver(const struct device *dev)
 	return 0;
 }
 
-struct bma421_data bma421_driver;
+#define BMA421_INIT(index)   \
+	static struct bma421_data bma421_data_##index; \
+	static const struct bma421_config bma421_cfg_##index = { \
+		.i2c = I2C_DT_SPEC_INST_GET(index), \
+		COND_CODE_1(CONFIG_BMA421_TRIGGER, \
+                (.int1_gpio = GPIO_DT_SPEC_INST_GET(index, int1_gpios)), ()) \
+	}; \
+	DEVICE_DT_INST_DEFINE(index, bma421_init_driver, NULL, \
+				&bma421_data_##index, &bma421_cfg_##index, POST_KERNEL, \
+				CONFIG_SENSOR_INIT_PRIORITY, &bma421_driver_api);
 
-static const struct bma421_config bma421_cfg0 = {
-	.i2c_bus = DT_INST_BUS_LABEL(0),
-	.i2c_addr = DT_INST_REG_ADDR(0),
-#if CONFIG_BMA421_TRIGGER
-	.drdy_pin = DT_INST_GPIO_PIN(0, int1_gpios),
-	.drdy_flags = DT_INST_GPIO_FLAGS(0, int1_gpios),
-	.drdy_controller = DT_INST_GPIO_LABEL(0, int1_gpios),
-#endif
-};
-
-DEVICE_DT_INST_DEFINE(0, bma421_init_driver, NULL,
-			&bma421_driver, &bma421_cfg0, POST_KERNEL,
-			CONFIG_SENSOR_INIT_PRIORITY, &bma421_driver_api);
+DT_INST_FOREACH_STATUS_OKAY(BMA421_INIT)
