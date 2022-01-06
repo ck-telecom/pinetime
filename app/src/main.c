@@ -12,17 +12,9 @@
 
 #include <common/log.h>
 
-enum {
-    AMS_ENTITY_ID_PLAYER,
-    AMS_Entity_ID_Queue,
-    AMS_Entity_ID_Track
-};
 
-enum {
-    AMS_PLAYER_ATTRIBUTE_ID_NAME,
-    PlayerAttributeIDPlaybackInfo,
-    PlayerAttributeIDVolume,
-};
+#include "ams_c.h"
+
 
 static const struct bt_data advertising_data[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -55,9 +47,6 @@ static uint8_t discovered(struct bt_conn* conn, const struct bt_gatt_attr* attr,
                        struct bt_gatt_discover_params* params);
 
 static struct bt_gatt_discover_params discover_params;
-
-#define AMS_ENTITY_ID_TRACK 2
-#define AMS_TRACK_ATTRIBUTE_ID_TITLE 2
 
 static uint8_t entity_update_notify(struct bt_conn* conn,
                                  struct bt_gatt_subscribe_params* params,
@@ -130,6 +119,10 @@ static uint8_t discovered(struct bt_conn* conn, const struct bt_gatt_attr* attr,
 
         entity_update_command[0] = AMS_ENTITY_ID_PLAYER;
         entity_update_command[1] = AMS_PLAYER_ATTRIBUTE_ID_NAME;
+        bt_gatt_write(conn, &entity_update_write_params);
+
+        entity_update_command[0] = AMS_ENTITY_ID_PLAYER;
+        entity_update_command[1] = AMS_PLAYER_ATTRIBUTE_ID_VOLUME;
         bt_gatt_write(conn, &entity_update_write_params);
     }
     return BT_GATT_ITER_STOP;

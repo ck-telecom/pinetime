@@ -32,6 +32,9 @@ target_sources(app PRIVATE src/screens/clock_face.c)
 target_sources(app PRIVATE src/screens/date_settings.c)
 target_sources(app PRIVATE src/view.c)
 
+zephyr_include_directories(.)
+zephyr_include_directories(src/bluetooth/service)
+
 execute_process(COMMAND git rev-parse --short HEAD
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 OUTPUT_VARIABLE PROJECT_GIT_COMMIT_HASH
