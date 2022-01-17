@@ -71,7 +71,7 @@ int bt_cts_discover(struct bt_conn *conn, struct bt_cts *inst)
 {
 	int err = 0;
 
-	memcpy(&inst->cli.uuid, BT_UUID_CTS_CURRENT_TIME, sizeof(inst->cli.uuid));
+	memcpy(&inst->cli.uuid, BT_UUID_CTS, sizeof(inst->cli.uuid));
 
 	inst->cli.conn = conn;
 	inst->cli.discover_params.func = cts_discover_func;
