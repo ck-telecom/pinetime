@@ -5,12 +5,36 @@
  * @version 0.1
  * @date 2022-01-06
  *
- * @copyright Copyright (c) 2022
+ * @copyright Copyright (c) 2022 <gouqs@hotmail.com>
  *
  */
 
 #ifndef _AMS_C_H
 #define _AMS_C_H
+
+#include <bluetooth/uuid.h>
+
+/** @def BT_UUID_AMS_VAL
+ *  @brief Apple Media Service UUID value
+ */
+#define BT_UUID_AMS_VAL
+
+/** @def BT_UUID_AMS
+ *  @brief Apple Media Service
+ */
+#define BT_UUID_AMS \
+	BT_UUID_DECLARE_128(BT_UUID_AMS_VAL)
+
+
+#define BT_UUID_AMS_ENTITY_UPDATE_VAL
+
+#define BT_UUID_AMS_ENTITY_UPDATE
+	BT_UUID_DECLARE_128(BT_UUID_AMS_ENTITY_UPDATE_VAL)
+
+#define BT_UUID_ENTITY_ATTRIBUTE_VAL
+
+#define BT_UUID_AMS_ENTITY_ATTR
+	BT_UUID_DECLARE_128(BT_UUID_ENTITY_ATTRIBUTE_VAL)
 
 enum ams_entity_id {
     AMS_ENTITY_ID_PLAYER,
