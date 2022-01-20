@@ -17,6 +17,7 @@
 
 
 struct bt_cts cts_inst;
+struct bt_ams ams_inst;
 
 static const struct bt_data advertising_data[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -140,12 +141,7 @@ static void connected(struct bt_conn* conn, uint8_t err)
 	}
 	printk("Connected\n");
 
-	discover_params.func = discovered;
-	discover_params.start_handle = 0x0001;
-	discover_params.end_handle = 0xFFFF;
-	discover_params.type = BT_GATT_DISCOVER_PRIMARY;
-	discover_params.uuid = &ams_uuid.uuid;
-	r = bt_gatt_discover(conn, &discover_params);
+	r = bt_ams_discover(conn, &ams_inst);
 	if (r) {
 		printk("discovery ams error %d", r);
 	}

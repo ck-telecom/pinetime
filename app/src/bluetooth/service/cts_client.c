@@ -18,9 +18,11 @@ static uint8_t cts_client_read_cb(struct bt_conn *conn, uint8_t err,
 	struct bt_cts *inst = CONTAINER_OF(client,
 					   struct bt_cts,
 					   cli);
-
+	uint8_t *p = data;
 	BT_DBG("Reading CCC data: err %d, %d bytes", err, length);
-
+	for (uint16_t i = 0; i < length; ++i) {
+		printk("0x%x", p[i]);
+	}
 	if (err) {
 
 	} else if (data) {
@@ -40,7 +42,7 @@ int bt_cts_client_time_get(struct bt_cts *inst)
 
 	inst->cli.read_params.func = cts_client_read_cb;
 	inst->cli.read_params.handle_count = 1;
-	inst->cli.read_params.single.handle = inst->cli.time_handle;
+	inst->cli.read_params.single.handle = inst->cli.current_time_handle;
 	inst->cli.read_params.single.offset = 0;
 
 	err = bt_gatt_read(inst->cli.conn, &inst->cli.read_params);
@@ -63,15 +65,20 @@ static uint8_t cts_discover_func(struct bt_conn *conn, const struct bt_gatt_attr
 					   cli);
 
 	if (!attr) {
-		BT_DBG("CTS Service Discovery completed");
+		BT_DBG("CTS Discovery completed");
 		return BT_GATT_ITER_STOP;
 	}
-	BT_DBG("Discovered attribute, handle: %u\n", attr->handle);
 
 	if (params->type == BT_GATT_DISCOVER_CHARACTERISTIC) {
-		if (!bt_uuid_cmp(params->uuid, BT_UUID_CTS_CURRENT_TIME)) {
-			inst->cli.time_handle = attr->handle;
+		struct bt_gatt_chrc *chrc =(struct bt_gatt_chrc *)attr->user_data;
+		// BT_DBG("Discovered attribute - uuid: %s, handle: %u", bt_uuid_str(chrc->uuid), attr->handle);
+
+		if (!bt_uuid_cmp(chrc->uuid, BT_UUID_CTS_CURRENT_TIME)) {
+			BT_DBG("CTS Current Time");
+			inst->cli.current_time_handle = attr->handle;
 			bt_cts_client_time_get(inst);
+		} else if (!bt_uuid_cmp(chrc->uuid, BT_UUID_CTS_LOCAL_TIME_INFOMATION)) {
+			BT_DBG("CTS Local Time Information");
 		}
 	}
 

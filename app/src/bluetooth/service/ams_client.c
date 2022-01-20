@@ -55,14 +55,18 @@ static uint8_t ams_discover_func(struct bt_conn *conn, const struct bt_gatt_attr
 	}
 
 	if (params->type == BT_GATT_DISCOVER_CHARACTERISTIC) {
+		struct bt_gatt_chrc *chrc =(struct bt_gatt_chrc *)attr->user_data;
 		struct bt_gatt_subscribe_params *sub_params = NULL;
-		BT_DBG("Discovered attribute - uuid: %s, handle: %u\n", bt_uuid_str(params->uuid), attr->handle);
-		if (!bt_uuid_cmp(params->uuid, BT_UUID_AMS_ENTITY_UPDATE)) {
+
+		//BT_DBG("Discovered attribute - uuid: %s, handle: %u\n", bt_uuid_str(chrc->uuid), attr->handle);
+		if (!bt_uuid_cmp(chrc->uuid, BT_UUID_AMS_ENTITY_UPDATE)) {
 			BT_DBG("AMS entity update");
 			inst->cli.entity_write_handle = attr->handle + 1;;
 			inst->cli.entity_subscribe_handle = attr->handle + 1;
-		} else if (!bt_uuid_cmp(params->uuid, BT_UUID_AMS_ENTITY_ATTR)) {
+		} else if (!bt_uuid_cmp(chrc->uuid, BT_UUID_AMS_ENTITY_ATTR)) {
 			BT_DBG("AMS entity attr");
+		} else if (!bt_uuid_cmp(chrc->uuid, BT_UUID_AMS_REMOTE_CMD)) {
+			BT_DBG("AMS Remote Command");
 		}
 		if (sub_params) {
 //bt_gatt_subscribe
