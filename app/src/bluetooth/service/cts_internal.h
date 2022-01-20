@@ -6,10 +6,14 @@ struct bt_cts_client {
 	struct bt_gatt_discover_params discover_params;
 	struct bt_uuid_16 uuid;
 	struct bt_conn *conn;
+	uint16_t start_handle;
+	uint16_t end_handle;
+	uint16_t time_handle;
+	uint8_t cts_buf[10];
 };
 
 struct bt_cts {
-	uint16_t time_handle;
+
 
 	union {
 		struct bt_cts_client cli;

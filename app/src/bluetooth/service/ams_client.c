@@ -10,12 +10,12 @@ static uint8_t entity_update_notify(struct bt_conn* conn,
                                  const void* data, uint16_t length)
 {
     const uint8_t* bytes = data;
-    printk("EntityID: %u, AttributeID: %u, Flags: %u, Value: ", bytes[0],
+    BT_DBG("EntityID: %u, AttributeID: %u, Flags: %u, Value: ", bytes[0],
            bytes[1], bytes[2]);
     for (uint16_t i = 3; i < length; ++i) {
-        printk("%c", bytes[i]);
+        BT_DBG("%c", bytes[i]);
     }
-    printk("\n");
+    BT_DBG("\n");
     return BT_GATT_ITER_CONTINUE;
 }
 
@@ -48,6 +48,11 @@ static uint8_t ams_discover_func(struct bt_conn *conn, const struct bt_gatt_attr
 							 discover_params);
 
 	struct bt_ams *inst = CONTAINER_OF(client_inst, struct bt_ams, cli);
+
+	if (!attr) {
+		BT_DBG("AMS Discovery completed");
+		return BT_GATT_ITER_STOP;
+	}
 
 	if (params->type == BT_GATT_DISCOVER_CHARACTERISTIC) {
 		struct bt_gatt_subscribe_params *sub_params = NULL;
