@@ -26,6 +26,12 @@
 #define BT_UUID_AMS \
 	BT_UUID_DECLARE_128(BT_UUID_AMS_VAL)
 
+#define BT_UUID_AMS_REMOTE_CMD_VAL \
+	BT_UUID_128_ENCODE(0x9B3C81D8, 0x57B1, 0x4A8A, 0xB8DF, 0x0E56F7CA51C2)
+
+#define BT_UUID_AMS_REMOTE_CMD \
+	BT_UUID_DECLARE_128(BT_UUID_AMS_REMOTE_CMD_VAL)
+
 #define BT_UUID_AMS_ENTITY_UPDATE_VAL \
 	BT_UUID_128_ENCODE(0x2F7CABCE, 0x808D, 0x411F, 0x9A0C, 0xBB92BA96C102)
 
@@ -62,6 +68,27 @@ enum ams_track_attribute_id {
     AMS_TRACK_ATTRIBUTE_ID_ALBUM,
     AMS_TRACK_ATTRIBUTE_ID_TITLE,
     AMS_TRACK_ATTRIBUTE_ID_DURATION,
+};
+
+struct bt_ams_client {
+	struct bt_gatt_write_params write_params;
+	struct bt_gatt_read_params read_params;
+	struct bt_gatt_discover_params discover_params;
+	struct bt_uuid_128 uuid;
+	struct bt_conn *conn;
+	uint16_t start_handle;
+	uint16_t end_handle;
+	uint16_t entity_write_handle;
+	uint16_t entity_subscribe_handle;
+	uint8_t entity_update_command[2];
+};
+
+struct bt_ams {
+
+
+	union {
+		struct bt_ams_client cli;
+	};
 };
 
 #endif /* _AMS_C_H */
