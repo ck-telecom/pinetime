@@ -39,9 +39,9 @@ int bt_cts_client_time_get(struct bt_cts *inst)
 	int err = 0;
 
 	inst->cli.read_params.func = cts_client_read_cb;
-	// inst->cli.read_params.by_uuid.uuid = &inst->cli.uuid;
-	inst->cli.read_params.by_uuid.start_handle = inst->cli.time_handle;
-	inst->cli.read_params.by_uuid.end_handle = 0xffff;
+	inst->cli.read_params.handle_count = 1;
+	inst->cli.read_params.single.handle = inst->cli.time_handle;
+	inst->cli.read_params.single.offset = 0;
 
 	err = bt_gatt_read(inst->cli.conn, &inst->cli.read_params);
 	if (err < 0) {

@@ -12,9 +12,11 @@
 
 #include <common/log.h>
 
-
+#include "cts_internal.h"
 #include "ams_c.h"
 
+
+struct bt_cts cts_inst;
 
 static const struct bt_data advertising_data[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -130,18 +132,28 @@ static uint8_t discovered(struct bt_conn* conn, const struct bt_gatt_attr* attr,
 
 static void connected(struct bt_conn* conn, uint8_t err)
 {
-    if (err) {
-        printk("Failed to connect\n");
-        return;
-    }
-    printk("Connected\n");
+	int r = 0;
 
-    discover_params.func = discovered;
-    discover_params.start_handle = 0x0001;
-    discover_params.end_handle = 0xFFFF;
-    discover_params.type = BT_GATT_DISCOVER_PRIMARY;
-    discover_params.uuid = &ams_uuid.uuid;
-    bt_gatt_discover(conn, &discover_params);
+	if (err) {
+		printk("Failed to connect\n");
+		return;
+	}
+	printk("Connected\n");
+
+	discover_params.func = discovered;
+	discover_params.start_handle = 0x0001;
+	discover_params.end_handle = 0xFFFF;
+	discover_params.type = BT_GATT_DISCOVER_PRIMARY;
+	discover_params.uuid = &ams_uuid.uuid;
+	r = bt_gatt_discover(conn, &discover_params);
+	if (r) {
+		printk("discovery ams error %d", r);
+	}
+
+	r = bt_cts_discover(conn, &cts_inst);
+	if (r) {
+		printk("discovery cts error %d", r);
+	}
 }
 
 static void disconnected(struct bt_conn* conn, uint8_t err)
@@ -156,7 +168,8 @@ static void identity_resolved(struct bt_conn* conn, const bt_addr_le_t* rpa, con
 }
 #endif
 
-static void security_changed(struct bt_conn* conn, bt_security_t level)
+static void security_changed(struct bt_conn* conn, bt_security_t level,
+			     enum bt_security_err err)
 {
     printk("Security level changed\n");
 }
@@ -184,7 +197,6 @@ void main(void)
 
     bt_conn_cb_register(&conn_callbacks);
 
-
     error = bt_le_adv_start(BT_LE_ADV_CONN_NAME,
                             advertising_data, ARRAY_SIZE(advertising_data),
                             NULL, 0);
@@ -196,6 +208,5 @@ void main(void)
     while (1)
     {
         k_sleep(K_MSEC(10));
-
     }
 }

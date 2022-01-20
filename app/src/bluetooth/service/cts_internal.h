@@ -1,4 +1,5 @@
-
+#ifndef _CTS_INTERNAL_H
+#define _CTS_INTERNAL_H
 
 struct bt_cts_client {
 	struct bt_gatt_write_params write_params;
@@ -20,3 +21,7 @@ struct bt_cts {
 	};
 
 };
+
+int bt_cts_discover(struct bt_conn *conn, struct bt_cts *inst);
+
+#endif /* _CTS_INTERNAL_H */
