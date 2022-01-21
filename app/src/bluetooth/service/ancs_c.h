@@ -60,4 +60,25 @@ enum ancs_event_id {
 #define EventFlagPositiveAction BIT(3)
 #define EventFlagNegativeAction BIT(4)
 
+struct bt_ancs_client {
+	struct bt_gatt_write_params write_params;
+	struct bt_gatt_read_params read_params;
+	struct bt_gatt_discover_params discover_params;
+	struct bt_uuid_128 uuid;
+	struct bt_conn *conn;
+	uint16_t start_handle;
+	uint16_t end_handle;
+	uint16_t notification_soure_handle;
+	uint16_t control_point_handle;
+	uint16_t data_soure_handle;
+	uint8_t entity_update_command[2];
+};
+
+struct bt_ancs {
+
+	union {
+		struct bt_ancs_client cli;
+	};
+};
+
 #endif /* _ANCS_C_H */
