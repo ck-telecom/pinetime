@@ -58,18 +58,23 @@ static uint8_t ams_discover_func(struct bt_conn *conn, const struct bt_gatt_attr
 		struct bt_gatt_chrc *chrc =(struct bt_gatt_chrc *)attr->user_data;
 		struct bt_gatt_subscribe_params *sub_params = NULL;
 
-		//BT_DBG("Discovered attribute - uuid: %s, handle: %u\n", bt_uuid_str(chrc->uuid), attr->handle);
+		BT_DBG("Discovered attribute - uuid: %s, handle: %u", bt_uuid_str(chrc->uuid), attr->handle);
 		if (!bt_uuid_cmp(chrc->uuid, BT_UUID_AMS_ENTITY_UPDATE)) {
 			BT_DBG("AMS entity update");
 			inst->cli.entity_write_handle = attr->handle + 1;;
 			inst->cli.entity_subscribe_handle = attr->handle + 1;
+			//sub_params = &inst->cli.entity_update_sub_params;
 		} else if (!bt_uuid_cmp(chrc->uuid, BT_UUID_AMS_ENTITY_ATTR)) {
 			BT_DBG("AMS entity attr");
 		} else if (!bt_uuid_cmp(chrc->uuid, BT_UUID_AMS_REMOTE_CMD)) {
 			BT_DBG("AMS Remote Command");
 		}
 		if (sub_params) {
-//bt_gatt_subscribe
+			sub_params->notify = entity_update_notify;
+			sub_params->value = BT_GATT_CCC_NOTIFY;
+			sub_params->value_handle = attr->handle + 1;
+			//sub_params->ccc_handle = attr->handle + 2;
+			bt_gatt_subscribe(conn, sub_params);
 		}
 	}
 

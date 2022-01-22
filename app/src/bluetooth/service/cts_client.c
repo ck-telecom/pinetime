@@ -20,9 +20,9 @@ static uint8_t cts_client_read_cb(struct bt_conn *conn, uint8_t err,
 					   cli);
 	uint8_t *p = data;
 	BT_DBG("Reading CCC data: err %d, %d bytes", err, length);
-	for (uint16_t i = 0; i < length; ++i) {
+	/*for (uint16_t i = 0; i < length; ++i) {
 		printk("0x%x", p[i]);
-	}
+	}*/
 	if (err) {
 
 	} else if (data) {

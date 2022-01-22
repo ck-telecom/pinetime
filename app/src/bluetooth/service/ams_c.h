@@ -74,6 +74,7 @@ struct bt_ams_client {
 	struct bt_gatt_write_params write_params;
 	struct bt_gatt_read_params read_params;
 	struct bt_gatt_discover_params discover_params;
+	struct bt_gatt_subscribe_params entity_update_sub_params;
 	struct bt_uuid_128 uuid;
 	struct bt_conn *conn;
 	uint16_t start_handle;
@@ -90,5 +91,7 @@ struct bt_ams {
 		struct bt_ams_client cli;
 	};
 };
+
+int bt_ams_discover(struct bt_conn *conn, struct bt_ams *inst);
 
 #endif /* _AMS_C_H */

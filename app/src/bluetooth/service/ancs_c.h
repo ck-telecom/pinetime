@@ -34,24 +34,49 @@
 	BT_UUID_DECLARE_128(BT_UUID_ANCS_DATA_SOURCE_VAL)
 
 enum ancs_category_id {
-	ANCS_Category_ID_Other,
-	ANCS_Category_ID_IncomingCall,
-	ANCS_Category_ID_MissedCall,
-	ANCS_Category_ID_Voicemail,
-	ANCS_Category_ID_Social,
-	ANCS_Category_ID_Schedule,
-	ANCS_Category_ID_Email,
-	ANCS_Category_ID_News,
-	ANCS_Category_ID_HealthAndFitness,
-	ANCS_Category_ID_BusinessAndFinance,
-	ANCS_Category_ID_Location,
-	ANCS_Category_ID_Entertainment
+	ANCS_CATEGORY_ID_OTHER,
+	ANCS_CATEGORY_ID_INCOMING_CALL,
+	ANCS_CATEGORY_ID_MISSED_CALL,
+	ANCS_CATEGORY_ID_VOIC_EMAIL,
+	ANCS_CATEGORY_ID_SOCIAL,
+	ANCS_CATEGORY_ID_SCHEDULE,
+	ANCS_CATEGORY_ID_EMAIL,
+	ANCS_CATEGORY_ID_NEWS,
+	ANCS_CATEGORY_ID_HEALTH_AND_FITNESS,
+	ANCS_CATEGORY_ID_BUSINESS_AND_FINANCE,
+	ANCS_CATEGORY_ID_LOCATION,
+	ANCS_CATEGORY_ID_ENTERTAINMENT,
+	ANCS_CATEGORY_ID_MAX
 };
 
 enum ancs_event_id {
-	ancs_EventIDNotificationAdded,
-	ancs_EventIDNotificationModified,
-	ancs_EventIDNotificationRemoved
+	ANCS_EVENT_ID_NOTIFICATION_ADDED,
+	ANCS_EVENT_ID_NOTIFICATION_MODIFIED,
+	ANCS_EVENT_ID_NOTIFICATION_REMOVED,
+	ANCS_EVENT_ID_MAX
+};
+
+enum ancs_command_id {
+	ANCS_COMMAND_ID_GET_NOTIF_ATTRIBUTES,
+	ANCS_COMMAND_ID_GET_APP_ATTRIBUTES,
+	ANCS_COMMAND_ID_GET_PERFORM_NOTIF_ACTION,
+	ANCS_COMMAND_ID_MAX
+};
+
+enum ancs_notif_attr_id {
+	ANCS_NOTIF_ATTR_ID_APP_IDENTIFIER,
+	ANCS_NOTIF_ATTR_ID_TITLE,
+	ANCS_NOTIF_ATTR_ID_SUBTITLE,
+	ANCS_NOTIF_ATTR_ID_MESSAGE,
+	ANCS_NOTIF_ATTR_ID_MESSAGE_SIZE,
+	ANCS_NOTIF_ATTR_ID_DATE,
+	ANCS_NOTIF_ATTR_ID_POSITIVE_ACTION_LABEL,
+	ANCS_NOTIF_ATTR_ID_NEGATIVE_ACTION_LABEL
+};
+
+enum ble_ancs_c_action_id {
+	ANCS_ACTION_ID_POSITIVE = 0,
+	ANCS_ACTION_ID_NEGATIVE
 };
 
 #define EventFlagSilent		BIT(0)
@@ -64,6 +89,8 @@ struct bt_ancs_client {
 	struct bt_gatt_write_params write_params;
 	struct bt_gatt_read_params read_params;
 	struct bt_gatt_discover_params discover_params;
+	struct bt_gatt_subscribe_params notification_source_subscribe_parms;
+	struct bt_gatt_subscribe_params data_source_subscribe_parms;
 	struct bt_uuid_128 uuid;
 	struct bt_conn *conn;
 	uint16_t start_handle;
@@ -71,7 +98,7 @@ struct bt_ancs_client {
 	uint16_t notification_soure_handle;
 	uint16_t control_point_handle;
 	uint16_t data_soure_handle;
-	uint8_t entity_update_command[2];
+	uint8_t buff[32];
 };
 
 struct bt_ancs {
@@ -80,5 +107,7 @@ struct bt_ancs {
 		struct bt_ancs_client cli;
 	};
 };
+
+int bt_ancs_discover(struct bt_conn *conn, struct bt_ancs *inst);
 
 #endif /* _ANCS_C_H */

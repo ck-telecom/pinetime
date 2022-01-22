@@ -14,10 +14,11 @@
 
 #include "cts_internal.h"
 #include "ams_c.h"
-
+#include "ancs_c.h"
 
 struct bt_cts cts_inst;
 struct bt_ams ams_inst;
+struct bt_ancs ancs_inst;
 
 static const struct bt_data advertising_data[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -145,11 +146,17 @@ static void connected(struct bt_conn* conn, uint8_t err)
 	if (r) {
 		printk("discovery ams error %d", r);
 	}
-
+/*
 	r = bt_cts_discover(conn, &cts_inst);
 	if (r) {
 		printk("discovery cts error %d", r);
 	}
+*/
+	r = bt_ancs_discover(conn, &ancs_inst);
+	if (r) {
+		printk("discovery ancs error %d", r);
+	}
+
 }
 
 static void disconnected(struct bt_conn* conn, uint8_t err)
