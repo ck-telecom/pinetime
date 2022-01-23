@@ -5,6 +5,34 @@
 #define LOG_MODULE_NAME bt_ams_client
 #include "common/log.h"
 
+int ams_client_get_entity_attr(struct bt_ams *inst,
+			       enum ams_entity_id entity_id,
+			       uint8_t attr_id)
+{
+	memset(inst, 0, sizeof(inst->cli.write_params));
+
+	inst->cli.buf[0] = entity_id;
+	inst->cli.buf[1] = attr_id;
+
+	inst->cli.write_params.handle = inst->cli.entity_attr_handle;
+	inst->cli.write_params.data = inst->cli.buf;
+	inst->cli.write_params.length = 2;
+
+	return bt_gatt_write(inst->cli.conn, &inst->cli.write_params);
+}
+
+int ams_client_write_remote_command(struct bt_ams *inst, enum ams_remote_command_id rcid)
+{
+	memset(inst, 0, sizeof(inst->cli.write_params));
+
+	inst->cli.buf[0] = rcid;
+	inst->cli.write_params.handle = inst->cli.remote_command_handle;
+	inst->cli.write_params.data = inst->cli.buf;
+	inst->cli.write_params.length = 1;
+
+	return bt_gatt_write(inst->cli.conn, &inst->cli.write_params);
+}
+
 static uint8_t entity_update_notify(struct bt_conn* conn,
                                  struct bt_gatt_subscribe_params* params,
                                  const void* data, uint16_t length)
@@ -61,13 +89,15 @@ static uint8_t ams_discover_func(struct bt_conn *conn, const struct bt_gatt_attr
 		BT_DBG("Discovered attribute - uuid: %s, handle: %u", bt_uuid_str(chrc->uuid), attr->handle);
 		if (!bt_uuid_cmp(chrc->uuid, BT_UUID_AMS_ENTITY_UPDATE)) {
 			BT_DBG("AMS entity update");
-			inst->cli.entity_write_handle = attr->handle + 1;;
+			inst->cli.entity_write_handle = attr->handle;
 			inst->cli.entity_subscribe_handle = attr->handle + 1;
 			//sub_params = &inst->cli.entity_update_sub_params;
 		} else if (!bt_uuid_cmp(chrc->uuid, BT_UUID_AMS_ENTITY_ATTR)) {
 			BT_DBG("AMS entity attr");
+			inst->cli.entity_attr_handle = attr->handle;
 		} else if (!bt_uuid_cmp(chrc->uuid, BT_UUID_AMS_REMOTE_CMD)) {
 			BT_DBG("AMS Remote Command");
+			inst->cli.remote_command_handle = attr->handle;
 		}
 		if (sub_params) {
 			sub_params->notify = entity_update_notify;

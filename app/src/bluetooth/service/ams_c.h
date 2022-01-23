@@ -70,6 +70,13 @@ enum ams_track_attribute_id {
     AMS_TRACK_ATTRIBUTE_ID_DURATION,
 };
 
+enum ams_remote_command_id {
+	AMS_REMOTE_COMMAND_ID_PLAY,
+	AMS_REMOTE_COMMAND_ID_PAUSE,
+	AMS_REMOTE_COMMAND_ID_TOGGLE_PLAY_PAUSE,
+	AMS_REMOTE_COMMAND_ID_NEXTTRACK,
+};
+
 struct bt_ams_client {
 	struct bt_gatt_write_params write_params;
 	struct bt_gatt_read_params read_params;
@@ -81,7 +88,10 @@ struct bt_ams_client {
 	uint16_t end_handle;
 	uint16_t entity_write_handle;
 	uint16_t entity_subscribe_handle;
+	uint16_t entity_attr_handle;
+	uint16_t remote_command_handle;
 	uint8_t entity_update_command[2];
+	uint8_t buf[8];
 };
 
 struct bt_ams {

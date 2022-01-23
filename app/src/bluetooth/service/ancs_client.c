@@ -26,6 +26,19 @@ static const char *category_id_str[ANCS_CATEGORY_ID_MAX] = {
 	"Entertainment"
 };
 
+int bt_ancs_client_get_notif_attr(struct bt_ancs *inst,
+				  enum ancs_command_id cmd_id,
+				  enum ancs_notif_attr_id attr_id,
+				  ...)
+{
+
+}
+
+int bt_ancs_client_get_app_attrs(struct bt_ancs *inst, ...)
+{
+
+}
+
 int bt_ancs_client_perform_notif_action(struct bt_ancs *inst,
 					uint32_t notif_uid,
 					enum ble_ancs_c_action_id action_id)
@@ -46,6 +59,26 @@ int bt_ancs_client_perform_notif_action(struct bt_ancs *inst,
 static uint8_t notification_source_notify(struct bt_conn* conn,
                                           struct bt_gatt_subscribe_params* params,
                                           const void* data, uint16_t length)
+{
+    const uint8_t* bytes = data;
+    uint32_t notification_id;
+    printk("EventID: %u, EventFlags: %u, CategoryID: %u, CategoryCount: %u, NotificationUID: %u",
+           bytes[0], bytes[1], bytes[2], bytes[3], bytes[4]);
+/*    for (uint16_t i = 4; i < length; ++i) {
+        printk("%c", bytes[i]);
+    }*/
+    memcpy(&notification_id, &bytes[4], sizeof(notification_id));
+
+    BT_DBG("%s", event_id_str[bytes[0]]);
+    BT_DBG("%s", category_id_str[bytes[2]]);
+    BT_DBG("%d", notification_id);
+    printk("\n");
+    return BT_GATT_ITER_CONTINUE;
+}
+
+static uint8_t data_source_subscribe_parms(struct bt_conn* conn,
+                                           struct bt_gatt_subscribe_params* params,
+                                           const void* data, uint16_t length)
 {
     const uint8_t* bytes = data;
     uint32_t notification_id;
