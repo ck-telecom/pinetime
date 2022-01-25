@@ -15,6 +15,18 @@ extern "C" {
 void cts_init(void);
 void cts_notify(void);
 
+struct cts_current_time {
+	uint16_t year;
+	uint8_t month;
+	uint8_t day;
+	uint8_t hours;
+	uint8_t minutes;
+	uint8_t senconds;
+	uint8_t dayofweek;
+	uint8_t fractions;
+	uint8_t adjust_reason;
+};
+
 #ifdef __cplusplus
 }
 #endif

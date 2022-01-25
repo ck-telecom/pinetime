@@ -16,6 +16,7 @@ struct bt_cts_client {
 	struct bt_gatt_write_params write_params;
 	struct bt_gatt_read_params read_params;
 	struct bt_gatt_discover_params discover_params;
+	struct bt_gatt_subscribe_params subscribe_parms;
 	struct bt_uuid_16 uuid;
 	struct bt_conn *conn;
 	uint16_t start_handle;
