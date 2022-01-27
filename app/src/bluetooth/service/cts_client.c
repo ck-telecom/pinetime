@@ -3,6 +3,7 @@
 #include <bluetooth/gatt.h>
 
 #include "cts_internal.h"
+#include "cts.h"
 
 #define LOG_MODULE_NAME bt_cts_client
 #include "common/log.h"
@@ -28,6 +29,10 @@ static uint8_t cts_client_read_cb(struct bt_conn *conn, uint8_t err,
 	} else if (data) {
 		if (length ==  10) {
 			memcpy(inst->cli.cts_buf, data, length);
+			struct cts_current_time *ctime = inst->cli.cts_buf;
+			BT_DBG("Year%04d Day%03d T%2d:%2d:%2d",
+				ctime->year, ctime->day,
+				cts_time->hours, ctime->minutes, ctime->seconds);
 		}
 	} else {
 
