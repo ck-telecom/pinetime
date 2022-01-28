@@ -1,6 +1,8 @@
 #ifndef _APP_H
 #define _APP_H
 
+#include <stdbool.h>
+
 typedef struct _app app_t;
 
 typedef struct app_spec {
@@ -30,9 +32,9 @@ enum appMessages {
 };
 
 enum apps {
-	APP_HOME,
-	APP_CLOCK,
-	APP_DATE_SETTINGS_ID
+	HOME,
+	CLOCK,
+	DATE_SETTINGS_ID
 };
 
 enum app_state {
@@ -44,7 +46,7 @@ struct app_context {
 //     enum appGestures gestureDir;
 //     enum RefreshDirections refreshDirection;
 	enum app_state state;
-     //app_t *runningApp;
+	app_t *running_app;
 	enum apps active_app;
 	enum apps return_app;
      //enum appGestures returnDir;
