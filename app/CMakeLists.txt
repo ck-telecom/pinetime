@@ -24,11 +24,11 @@ target_sources(app PRIVATE src/main.c)
 #target_sources(app PRIVATE src/event/event_service.c)
 #target_sources(app PRIVATE src/event/event_service_mem.c)
 
-#target_sources(app PRIVATE src/bluetooth/bt.c)
 target_sources(app PRIVATE src/bluetooth/service/cts.c)
 target_sources(app PRIVATE src/bluetooth/service/cts_client.c)
 target_sources(app PRIVATE src/bluetooth/service/ams_client.c)
 target_sources(app PRIVATE src/bluetooth/service/ancs_client.c)
+target_sources(app PRIVATE src/bluetooth/service/ans_client.c)
 
 #target_sources(app PRIVATE src/screens/home.c)
 #target_sources(app PRIVATE src/screens/clock_face.c)
