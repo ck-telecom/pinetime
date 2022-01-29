@@ -81,7 +81,7 @@ struct bt_ams_client {
 	struct bt_gatt_write_params write_params;
 	struct bt_gatt_read_params read_params;
 	struct bt_gatt_discover_params discover_params;
-	struct bt_gatt_subscribe_params entity_update_sub_params;
+	struct bt_gatt_subscribe_params sub_params;
 	struct bt_uuid_128 uuid;
 	struct bt_conn *conn;
 	uint16_t start_handle;
@@ -90,7 +90,7 @@ struct bt_ams_client {
 	uint16_t entity_subscribe_handle;
 	uint16_t entity_attr_handle;
 	uint16_t remote_command_handle;
-	uint8_t entity_update_command[2];
+	uint8_t entity_update_command[8];
 	uint8_t buf[8];
 };
 

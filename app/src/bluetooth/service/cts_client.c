@@ -32,20 +32,13 @@ static uint8_t cts_client_read_cb(struct bt_conn *conn, uint8_t err,
 
 	}
 	if (offset >= 10) {
-		struct cts_current_time *ctime = inst->cli.cts_buf;
+		struct cts_current_time *ctime = (struct cts_current_time *)inst->cli.cts_buf;
 		BT_DBG("Year %04d Day %02d Time %2d:%2d:%2d",
 			ctime->year, ctime->day,
 			ctime->hours, ctime->minutes, ctime->seconds);
 	}
 	/* callback to notify? */
 	return BT_GATT_ITER_CONTINUE;
-}
-
-static uint8_t cts_current_time_notify(struct bt_conn* conn,
-				       struct bt_gatt_subscribe_params* params,
-				       const void* data, uint16_t length)
-{
-
 }
 
 int bt_cts_client_time_get(struct bt_cts *inst)
@@ -84,32 +77,14 @@ static uint8_t cts_discover_func(struct bt_conn *conn, const struct bt_gatt_attr
 
 	if (params->type == BT_GATT_DISCOVER_CHARACTERISTIC) {
 		struct bt_gatt_chrc *chrc =(struct bt_gatt_chrc *)attr->user_data;
-		struct bt_gatt_subscribe_params *sub_params = NULL;
+
 		// BT_DBG("Discovered attribute - uuid: %s, handle: %u", bt_uuid_str(chrc->uuid), attr->handle);
 
 		if (!bt_uuid_cmp(chrc->uuid, BT_UUID_CTS_CURRENT_TIME)) {
 			BT_DBG("CTS Current Time");
 			inst->cli.current_time_handle = bt_gatt_attr_value_handle(attr);
-/*
-			sub_params = &inst->cli.subscribe_parms;
-
-			sub_params->value = BT_GATT_CCC_NOTIFY;
-			sub_params->notify = cts_current_time_notify;
-			sub_params->value_handle = bt_gatt_attr_value_handle(attr);
-#if defined(CONFIG_BT_GATT_AUTO_DISCOVER_CCC)
-			sub_params->ccc_handle = 0;
-			sub_params->end_handle = inst->cli.end_handle;
-			sub_params->disc_params = &inst->cli.discover_params;
-#else
-			#error "CONFIG_BT_GATT_AUTO_DISCOVER_CCC not configured"
-#endif
-*/
 		} else if (!bt_uuid_cmp(chrc->uuid, BT_UUID_CTS_LOCAL_TIME_INFOMATION)) {
 			BT_DBG("CTS Local Time Information");
-		}
-
-		if (sub_params) {
-			bt_gatt_subscribe(inst->cli.conn, sub_params);
 		}
 	}
 

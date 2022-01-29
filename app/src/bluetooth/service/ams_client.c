@@ -34,23 +34,43 @@ int ams_client_write_remote_command(struct bt_ams *inst, enum ams_remote_command
 }
 
 static uint8_t entity_update_notify(struct bt_conn* conn,
-                                 struct bt_gatt_subscribe_params* params,
-                                 const void* data, uint16_t length)
+				    struct bt_gatt_subscribe_params* params,
+				    const void* data, uint16_t length)
 {
-    const uint8_t* bytes = data;
-    BT_DBG("EntityID: %u, AttributeID: %u, Flags: %u, Value: ", bytes[0],
-           bytes[1], bytes[2]);
-    for (uint16_t i = 3; i < length; ++i) {
-        BT_DBG("%c", bytes[i]);
-    }
-    BT_DBG("\n");
-    return BT_GATT_ITER_CONTINUE;
+	if (!data || (length <= 0)) {
+		return BT_GATT_ITER_STOP;
+	}
+
+	const uint8_t* bytes = data;
+	printk("EntityID: %u, AttributeID: %u, Flags: %u, Value: ", bytes[0],
+		bytes[1], bytes[2]);
+	for (uint16_t i = 3; i < length; ++i) {
+		printk("%c", bytes[i]);
+	}
+	printk("\n");
+	return BT_GATT_ITER_CONTINUE;
 }
 
 static void entity_update_write_response(struct bt_conn* conn, uint8_t err,
-                                         struct bt_gatt_write_params* params)
+					 struct bt_gatt_write_params* params)
 {
 
+}
+
+int ams_client_entity_player_all_write(struct bt_ams *inst)
+{
+	inst->cli.entity_update_command[0] = AMS_ENTITY_ID_PLAYER;
+	inst->cli.entity_update_command[1] = AMS_PLAYER_ATTRIBUTE_ID_NAME;
+	inst->cli.entity_update_command[2] = AMS_PLAYER_ATTRIBUTE_ID_PLAYBACKINFO;
+	inst->cli.entity_update_command[3] = AMS_PLAYER_ATTRIBUTE_ID_VOLUME;
+
+	inst->cli.write_params.data = inst->cli.entity_update_command;
+	inst->cli.write_params.length = 4;
+	inst->cli.write_params.offset = 0;
+	inst->cli.write_params.func = entity_update_write_response;
+	inst->cli.write_params.handle = inst->cli.entity_write_handle;
+
+	return bt_gatt_write(inst->cli.conn, &inst->cli.write_params);
 }
 
 int ams_client_entity_write(struct bt_ams *inst,
@@ -79,6 +99,8 @@ static uint8_t ams_discover_func(struct bt_conn *conn, const struct bt_gatt_attr
 
 	if (!attr) {
 		BT_DBG("AMS Discovery completed");
+		//ams_client_entity_write(inst, AMS_ENTITY_ID_PLAYER, AMS_PLAYER_ATTRIBUTE_ID_NAME);
+		ams_client_entity_player_all_write(inst);
 		return BT_GATT_ITER_STOP;
 	}
 
@@ -86,24 +108,33 @@ static uint8_t ams_discover_func(struct bt_conn *conn, const struct bt_gatt_attr
 		struct bt_gatt_chrc *chrc =(struct bt_gatt_chrc *)attr->user_data;
 		struct bt_gatt_subscribe_params *sub_params = NULL;
 
-		BT_DBG("Discovered attribute - uuid: %s, handle: %u", bt_uuid_str(chrc->uuid), attr->handle);
+		// BT_DBG("Discovered attribute - uuid: %s, handle: %u", bt_uuid_str(chrc->uuid), attr->handle);
 		if (!bt_uuid_cmp(chrc->uuid, BT_UUID_AMS_ENTITY_UPDATE)) {
 			BT_DBG("AMS entity update");
-			inst->cli.entity_write_handle = attr->handle;
-			inst->cli.entity_subscribe_handle = attr->handle + 1;
-			//sub_params = &inst->cli.entity_update_sub_params;
+			inst->cli.entity_write_handle = bt_gatt_attr_value_handle(attr);
+			inst->cli.entity_subscribe_handle = bt_gatt_attr_value_handle(attr);
+
+			sub_params = &inst->cli.sub_params;
+
+			sub_params->value = BT_GATT_CCC_NOTIFY;
+			sub_params->notify = entity_update_notify;
+			sub_params->value_handle = bt_gatt_attr_value_handle(attr);
+#if defined(CONFIG_BT_GATT_AUTO_DISCOVER_CCC)
+			sub_params->ccc_handle = 0;
+			sub_params->end_handle = inst->cli.end_handle;
+			sub_params->disc_params = &inst->cli.discover_params;
+#else
+			sub_params->ccc_handle = attr->handle + 3;
+#endif
 		} else if (!bt_uuid_cmp(chrc->uuid, BT_UUID_AMS_ENTITY_ATTR)) {
 			BT_DBG("AMS entity attr");
-			inst->cli.entity_attr_handle = attr->handle;
+			inst->cli.entity_attr_handle = bt_gatt_attr_value_handle(attr);
 		} else if (!bt_uuid_cmp(chrc->uuid, BT_UUID_AMS_REMOTE_CMD)) {
 			BT_DBG("AMS Remote Command");
-			inst->cli.remote_command_handle = attr->handle;
+			inst->cli.remote_command_handle = bt_gatt_attr_value_handle(attr);
 		}
+
 		if (sub_params) {
-			sub_params->notify = entity_update_notify;
-			sub_params->value = BT_GATT_CCC_NOTIFY;
-			sub_params->value_handle = attr->handle + 1;
-			//sub_params->ccc_handle = attr->handle + 2;
 			bt_gatt_subscribe(conn, sub_params);
 		}
 	}
