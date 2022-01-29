@@ -16,7 +16,7 @@ manifest:
       path: modules/hal/cmsis
 
     - name: hal_nordic
-      revision: a42b016d7c7610489f5f8c79773fedc05ba352ee
+      revision: cad21db72a61b8dde0aabf95301dfd9dee119018
       path: modules/hal/nordic
 
     - name: lvgl
@@ -33,6 +33,6 @@ manifest:
 
     - name: zephyr
       west-commands: scripts/west-commands.yml
-      revision: main
+      revision: v2.7.0
   self:
     path: pinetime
