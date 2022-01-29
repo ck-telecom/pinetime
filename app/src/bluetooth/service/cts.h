@@ -21,7 +21,7 @@ struct cts_current_time {
 	uint8_t day;
 	uint8_t hours;
 	uint8_t minutes;
-	uint8_t senconds;
+	uint8_t seconds;
 	uint8_t dayofweek;
 	uint8_t fractions;
 	uint8_t adjust_reason;

@@ -19,23 +19,23 @@ static uint8_t cts_client_read_cb(struct bt_conn *conn, uint8_t err,
 	struct bt_cts *inst = CONTAINER_OF(client,
 					   struct bt_cts,
 					   cli);
-	uint8_t *p = data;
-	BT_DBG("Reading CCC data: err %d, %d bytes", err, length);
-	/*for (uint16_t i = 0; i < length; ++i) {
-		printk("0x%x", p[i]);
-	}*/
+	static uint8_t offset = 0;
+
+	BT_DBG("Reading Current Time: err %d, %d bytes", err, length);
+
 	if (err) {
 
-	} else if (data) {
-		if (length ==  10) {
-			memcpy(inst->cli.cts_buf, data, length);
-			struct cts_current_time *ctime = inst->cli.cts_buf;
-			BT_DBG("Year%04d Day%03d T%2d:%2d:%2d",
-				ctime->year, ctime->day,
-				cts_time->hours, ctime->minutes, ctime->seconds);
-		}
+	} else if (data && (length > 0)) {
+		memcpy(inst->cli.cts_buf + offset, data, length);
+		offset += length;
 	} else {
 
+	}
+	if (offset >= 10) {
+		struct cts_current_time *ctime = inst->cli.cts_buf;
+		BT_DBG("Year %04d Day %02d Time %2d:%2d:%2d",
+			ctime->year, ctime->day,
+			ctime->hours, ctime->minutes, ctime->seconds);
 	}
 	/* callback to notify? */
 	return BT_GATT_ITER_CONTINUE;
@@ -90,7 +90,7 @@ static uint8_t cts_discover_func(struct bt_conn *conn, const struct bt_gatt_attr
 		if (!bt_uuid_cmp(chrc->uuid, BT_UUID_CTS_CURRENT_TIME)) {
 			BT_DBG("CTS Current Time");
 			inst->cli.current_time_handle = bt_gatt_attr_value_handle(attr);
-
+/*
 			sub_params = &inst->cli.subscribe_parms;
 
 			sub_params->value = BT_GATT_CCC_NOTIFY;
@@ -103,6 +103,7 @@ static uint8_t cts_discover_func(struct bt_conn *conn, const struct bt_gatt_attr
 #else
 			#error "CONFIG_BT_GATT_AUTO_DISCOVER_CCC not configured"
 #endif
+*/
 		} else if (!bt_uuid_cmp(chrc->uuid, BT_UUID_CTS_LOCAL_TIME_INFOMATION)) {
 			BT_DBG("CTS Local Time Information");
 		}
