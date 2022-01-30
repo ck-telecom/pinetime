@@ -79,6 +79,30 @@ static struct bt_conn_cb conn_callbacks = {
 #endif
 };
 
+static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	printk("Passkey for %s: %06u\n", addr, passkey);
+}
+
+static void auth_cancel(struct bt_conn *conn)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	printk("Pairing cancelled: %s\n", addr);
+}
+
+static struct bt_conn_auth_cb auth_cb_display = {
+	.passkey_display = auth_passkey_display,
+	.passkey_entry = NULL,
+	.cancel = auth_cancel,
+};
+
 void main(void)
 {
 	printk("Hello World! %s\n", CONFIG_BOARD);
@@ -90,6 +114,7 @@ void main(void)
 	}
 
 	bt_conn_cb_register(&conn_callbacks);
+	bt_conn_auth_cb_register(&auth_cb_display);
 
 	error = bt_le_adv_start(BT_LE_ADV_CONN_NAME,
 				advertising_data, ARRAY_SIZE(advertising_data),
