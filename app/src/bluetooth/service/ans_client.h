@@ -39,6 +39,14 @@
 #define BT_UUID_ANS_SUPPORTED_UNREAD_ALERT_CATEGORY \
 	BT_UUID_DECLARE_16(BT_UUID_ANS_SUPPORTED_UNREAD_ALERT_CATEGORY_VAL)
 
+struct bt_ans;
+
+typedef void (*bt_ans_discover_cb)(struct bt_ans *inst, int err);
+
+struct bt_ans_cb {
+	bt_ans_discover_cb discover;
+};
+
 struct bt_ans_client {
 	struct bt_gatt_write_params write_params;
 	struct bt_gatt_read_params read_params;
@@ -53,6 +61,8 @@ struct bt_ans_client {
 	uint16_t control_point_handle;
 	uint16_t data_soure_handle;
 	uint8_t buff[32];
+	bool busy;
+	struct bt_ans_cb *cb;
 };
 
 struct bt_ans {
