@@ -98,6 +98,13 @@ static uint8_t data_source_notify(struct bt_conn* conn,
 	return BT_GATT_ITER_CONTINUE;
 }
 
+static bool valid_inst_discovered(struct bt_ancs *inst)
+{
+	return inst->cli.notification_soure_handle &&
+	       inst->cli.control_point_handle &&
+	       inst->cli.data_soure_handle;
+}
+
 static uint8_t ancs_discover_func(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 				 struct bt_gatt_discover_params *params)
 {
@@ -109,6 +116,15 @@ static uint8_t ancs_discover_func(struct bt_conn *conn, const struct bt_gatt_att
 
 	if (!attr) {
 		BT_DBG("ANCS Discovery completed");
+		inst->cli.busy = false;
+		(void)memset(params, 0, sizeof(*params));
+
+		if (inst->cli.cb && inst->cli.cb->discover) {
+			int err = valid_inst_discovered(inst) ? 0 : -ENOENT;
+
+			inst->cli.cb->discover(inst, err);
+		}
+
 		return BT_GATT_ITER_STOP;
 	}
 
@@ -116,7 +132,7 @@ static uint8_t ancs_discover_func(struct bt_conn *conn, const struct bt_gatt_att
 		struct bt_gatt_chrc *chrc =(struct bt_gatt_chrc *)attr->user_data;
 		struct bt_gatt_subscribe_params *sub_params = NULL;
 
-		BT_DBG("Discovered attribute - uuid: %s, handle: %u", bt_uuid_str(chrc->uuid), attr->handle);
+		// BT_DBG("Discovered attribute - uuid: %s, handle: %u", bt_uuid_str(chrc->uuid), attr->handle);
 		if (!bt_uuid_cmp(chrc->uuid, BT_UUID_ANCS_NOTIFICATION_SOURCE)) {
 			BT_DBG("ANCS Notification Source");
 			inst->cli.notification_soure_handle = bt_gatt_attr_value_handle(attr);
@@ -160,6 +176,14 @@ static uint8_t primary_discover_func(struct bt_conn *conn,
 
 	struct bt_ancs *inst = CONTAINER_OF(client_inst, struct bt_ancs, cli);
 
+	if (attr == NULL) {
+		BT_DBG("Could not find a ANCS instance on the server");
+		if (inst->cli.cb && inst->cli.cb->discover) {
+			inst->cli.cb->discover(inst, -ENODATA);
+		}
+		return BT_GATT_ITER_STOP;
+	}
+
 	if (params->type == BT_GATT_DISCOVER_PRIMARY) {
 		int err = 0;
 		struct bt_gatt_service_val* gatt_service = attr->user_data;
@@ -177,6 +201,9 @@ static uint8_t primary_discover_func(struct bt_conn *conn,
 		err = bt_gatt_discover(conn, &inst->cli.discover_params);
 		if (err) {
 			BT_DBG("Discover failed (err %d)", err);
+			if (inst->cli.cb && inst->cli.cb->discover) {
+				inst->cli.cb->discover(inst, err);
+			}
 		}
 		return BT_GATT_ITER_STOP;
 	}
@@ -198,6 +225,21 @@ int bt_ancs_discover(struct bt_conn *conn, struct bt_ancs *inst)
 	inst->cli.discover_params.end_handle = BT_ATT_LAST_ATTTRIBUTE_HANDLE;
 
 	err = bt_gatt_discover(conn, &inst->cli.discover_params);
+	if (err) {
+		BT_DBG("Discover failed (err %d)", err);
+	} else {
+		inst->cli.busy = true;
+	}
 
 	return err;
+}
+
+void bt_ancs_client_cb_register(struct bt_ancs *inst, struct bt_ancs_cb *cb)
+{
+	if (!inst) {
+		BT_DBG("inst cannot be NULL");
+		return;
+	}
+
+	inst->cli.cb = cb;
 }

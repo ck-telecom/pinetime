@@ -85,6 +85,14 @@ enum ble_ancs_c_action_id {
 #define EventFlagPositiveAction BIT(3)
 #define EventFlagNegativeAction BIT(4)
 
+struct bt_ancs;
+
+typedef void (*bt_ancs_discover_cb)(struct bt_ancs *inst, int err);
+
+struct bt_ancs_cb {
+	bt_ancs_discover_cb discover;
+};
+
 struct bt_ancs_client {
 	struct bt_gatt_write_params write_params;
 	struct bt_gatt_read_params read_params;
@@ -99,6 +107,8 @@ struct bt_ancs_client {
 	uint16_t control_point_handle;
 	uint16_t data_soure_handle;
 	uint8_t buff[32];
+	bool busy;
+	struct bt_ancs_cb *cb;
 };
 
 struct bt_ancs {
