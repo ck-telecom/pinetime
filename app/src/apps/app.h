@@ -7,11 +7,11 @@ typedef struct _app app_t;
 
 typedef struct app_spec {
 	const char *name;
-	uint32_t updateInterval;
-	int (*init)(app_t *app, lv_obj_t * parent);
-	int (*update)(app_t *app);
-	int (*gesture)(app_t *app, enum appGestures gesture);
-	int (*close)(app_t *app);
+//	uint32_t updateInterval;
+	int (*init)(app_t *app, lv_obj_t *parent);
+//	int (*update)(app_t *app);
+	int (*event_handler)(app_t *app, uint32_t event, unsigned long data);
+	int (*eixt)(app_t *app);
 } app_spec_t;
 
 struct _app {

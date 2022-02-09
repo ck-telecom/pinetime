@@ -22,7 +22,7 @@ static void anim_label(lv_obj_t *obj, bool show)
 	lv_anim_init(&a);
 	lv_anim_set_var(&a, obj);
 
-	if(show) {
+	if (show) {
 		lv_anim_set_values(&a, 20, -25);
 		lv_anim_set_time(&a, 500);
 		lv_anim_set_path_cb(&a, lv_anim_path_overshoot);
@@ -141,10 +141,21 @@ static lv_obj_t *screen_clock_create(clock_app_t *ht, lv_obj_t *parent)
     return scr;
 }
 
-static int init(app_t *app, lv_obj_t * parent)
+static void clock_update_task(lv_task_t *task)
+{
+	app_t *app = task->user_data;
+	clock_app_t *htapp = _from_app(app);
+
+	update(app);
+}
+
+static int clock_init(app_t *app, lv_obj_t *parent)
 {
 	clock_app_t *htapp = _from_app(app);
 	htapp->screen = screen_clock_create(htapp, parent);
+
+	htapp->lv_task_clock = lv_task_create(clock_update_task, 500, LV_TASK_PRIO_MID, app);
+
 	return 0;
 }
 
@@ -225,21 +236,20 @@ static int gesture(app_t *app, enum appGestures gesture)
     return 0;
 }
 
-static int close(app_t *app)
+static int clock_exit(app_t *app)
 {
 	clock_app_t *ht = _from_app(app);
+
 	lv_obj_clean(ht->screen);
 	lv_obj_del(ht->screen);
 	ht->screen = NULL;
+	lv_task_del(ht->lv_task_clock);
 
 	return 0;
 }
 
 static const app_spec_t clock_spec = {
 	.name = "clock",
-	.updateInterval = 250,
-	.init = init,
-	.update = update,
-	.gesture = gesture,
-	.close = close,
+	.init = clock_init,
+	.exit = clock_exit,
 };
