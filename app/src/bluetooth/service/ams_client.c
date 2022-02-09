@@ -88,6 +88,13 @@ int ams_client_entity_write(struct bt_ams *inst,
 	return bt_gatt_write(inst->cli.conn, &inst->cli.write_params);
 }
 
+static bool valid_inst_discovered(struct bt_ams *inst)
+{
+	return inst->cli.entity_write_handle &&
+	       inst->cli.entity_attr_handle &&
+	       inst->cli.remote_command_handle;
+}
+
 static uint8_t ams_discover_func(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 				 struct bt_gatt_discover_params *params)
 {
@@ -99,8 +106,15 @@ static uint8_t ams_discover_func(struct bt_conn *conn, const struct bt_gatt_attr
 
 	if (!attr) {
 		BT_DBG("AMS Discovery completed");
-		//ams_client_entity_write(inst, AMS_ENTITY_ID_PLAYER, AMS_PLAYER_ATTRIBUTE_ID_NAME);
-		ams_client_entity_player_all_write(inst);
+		inst->cli.busy = false;
+		(void)memset(params, 0, sizeof(*params));
+
+		if (inst->cli.cb && inst->cli.cb->discover) {
+			int err = valid_inst_discovered(inst) ? 0 : -ENOENT;
+
+			inst->cli.cb->discover(inst, err);
+		}
+
 		return BT_GATT_ITER_STOP;
 	}
 
@@ -152,6 +166,14 @@ static uint8_t primary_discover_func(struct bt_conn *conn,
 
 	struct bt_ams *inst = CONTAINER_OF(client_inst, struct bt_ams, cli);
 
+	if (attr == NULL) {
+		BT_DBG("Could not find a AMS instance on the server");
+		if (inst->cli.cb && inst->cli.cb->discover) {
+			inst->cli.cb->discover(inst, -ENODATA);
+		}
+		return BT_GATT_ITER_STOP;
+	}
+
 	if (params->type == BT_GATT_DISCOVER_PRIMARY) {
 		int err = 0;
 		struct bt_gatt_service_val* gatt_service = attr->user_data;
@@ -169,6 +191,9 @@ static uint8_t primary_discover_func(struct bt_conn *conn,
 		err = bt_gatt_discover(conn, &inst->cli.discover_params);
 		if (err) {
 			BT_DBG("Discover failed (err %d)", err);
+			if (inst->cli.cb && inst->cli.cb->discover) {
+				inst->cli.cb->discover(inst, err);
+			}
 		}
 		return BT_GATT_ITER_STOP;
 	}
@@ -190,6 +215,21 @@ int bt_ams_discover(struct bt_conn *conn, struct bt_ams *inst)
 	inst->cli.discover_params.end_handle = BT_ATT_LAST_ATTTRIBUTE_HANDLE;
 
 	err = bt_gatt_discover(conn, &inst->cli.discover_params);
+	if (err) {
+		BT_DBG("Discover failed (err %d)", err);
+	} else {
+		inst->cli.busy = true;
+	}
 
 	return err;
+}
+
+void bt_ams_client_cb_register(struct bt_ams *inst, struct bt_ams_cb *cb)
+{
+	if (!inst) {
+		BT_DBG("inst cannot be NULL");
+		return;
+	}
+
+	inst->cli.cb = cb;
 }

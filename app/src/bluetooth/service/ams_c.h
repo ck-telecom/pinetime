@@ -77,6 +77,14 @@ enum ams_remote_command_id {
 	AMS_REMOTE_COMMAND_ID_NEXTTRACK,
 };
 
+struct bt_ams;
+
+typedef void (*bt_ams_discover_cb)(struct bt_ams *inst, int err);
+
+struct bt_ams_cb {
+	bt_ams_discover_cb discover;
+};
+
 struct bt_ams_client {
 	struct bt_gatt_write_params write_params;
 	struct bt_gatt_read_params read_params;
@@ -92,6 +100,8 @@ struct bt_ams_client {
 	uint16_t remote_command_handle;
 	uint8_t entity_update_command[8];
 	uint8_t buf[8];
+	bool busy;
+	struct bt_ams_cb *cb;
 };
 
 struct bt_ams {
