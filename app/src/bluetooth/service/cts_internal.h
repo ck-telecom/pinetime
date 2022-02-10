@@ -46,4 +46,6 @@ struct bt_cts {
 
 int bt_cts_discover(struct bt_conn *conn, struct bt_cts *inst);
 
+void bt_cts_client_cb_register(struct bt_cts *inst, struct bt_cts_cb *cb);
+
 #endif /* _CTS_INTERNAL_H */

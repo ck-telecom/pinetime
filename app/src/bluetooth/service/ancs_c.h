@@ -120,4 +120,6 @@ struct bt_ancs {
 
 int bt_ancs_discover(struct bt_conn *conn, struct bt_ancs *inst);
 
+void bt_ancs_client_cb_register(struct bt_ancs *inst, struct bt_ancs_cb *cb);
+
 #endif /* _ANCS_C_H */

@@ -114,4 +114,6 @@ struct bt_ams {
 
 int bt_ams_discover(struct bt_conn *conn, struct bt_ams *inst);
 
+void bt_ams_client_cb_register(struct bt_ams *inst, struct bt_ams_cb *cb);
+
 #endif /* _AMS_C_H */

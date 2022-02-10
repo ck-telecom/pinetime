@@ -201,6 +201,11 @@ static uint8_t primary_discover_func(struct bt_conn *conn,
 	return BT_GATT_ITER_CONTINUE;
 }
 
+void bt_ams_client_reset(struct bt_ams *inst, struct bt_conn *conn)
+{
+
+}
+
 int bt_ams_discover(struct bt_conn *conn, struct bt_ams *inst)
 {
 	int err = 0;
