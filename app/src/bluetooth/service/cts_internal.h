@@ -12,6 +12,14 @@
 #define BT_UUID_CTS_LOCAL_TIME_INFOMATION \
 	BT_UUID_DECLARE_16(BT_UUID_CTS_LOCAL_TIME_INFOMATION_VAL)
 
+struct bt_cts;
+
+typedef void (*bt_cts_discover_cb)(struct bt_cts *inst, int err);
+
+struct bt_cts_cb {
+	bt_cts_discover_cb discover;
+};
+
 struct bt_cts_client {
 	struct bt_gatt_write_params write_params;
 	struct bt_gatt_read_params read_params;
@@ -23,6 +31,8 @@ struct bt_cts_client {
 	uint16_t end_handle;
 	uint16_t current_time_handle;
 	uint8_t cts_buf[10];
+	bool busy;
+	struct bt_cts_cb *cb;
 };
 
 struct bt_cts {
