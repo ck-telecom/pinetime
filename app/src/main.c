@@ -16,42 +16,131 @@
 #include "ams_c.h"
 #include "ancs_c.h"
 
+#include "msg_def.h"
+
+#define BT_DISCOVER_DELAY 1 /* in s */
+
 struct bt_cts cts_inst;
 struct bt_ams ams_inst;
 struct bt_ancs ancs_inst;
+
+static struct bt_conn *default_conn;
+
+K_MBOX_DEFINE(main_mailbox);
+
+K_SEM_DEFINE(cts_sem, 0, 1);
+K_SEM_DEFINE(ams_sem, 0, 1);
+K_SEM_DEFINE(ancs_sem, 0, 1);
+
+static uint8_t main_buffer[1024];
 
 static const struct bt_data advertising_data[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 };
 
-static void connected(struct bt_conn* conn, uint8_t err)
+void sys_push_msg(uint32_t msg_type)
+{
+	struct k_mbox_msg send_msg;
+
+	send_msg.info = msg_type;
+	send_msg.size = 0;
+	send_msg.tx_data = NULL;
+	send_msg.tx_block.data = NULL;
+	send_msg.tx_target_thread = K_ANY;
+
+	k_mbox_async_put(&main_mailbox, &send_msg, NULL);
+}
+
+void sys_push_msg_with_data(uint32_t msg_type, void *data, int size)
+{
+}
+
+int cts_start_discover(struct bt_conn *conn, uint8_t timeout)
 {
 	int r = 0;
 
+	r = bt_cts_discover(conn, &cts_inst);
+	k_sem_take(&cts_sem, K_SECONDS(timeout));
+
+	return r;
+}
+
+static void cts_discover_cb(struct bt_cts *inst, int err)
+{
 	if (err) {
-		printk("Failed to connect\n");
-		return;
+		BT_DBG("ancs discover failed");
 	}
-	printk("Connected\n");
+	k_sem_give(&cts_sem);
+}
+
+struct bt_cts_cb bt_cts_callbacks = {
+	.discover = cts_discover_cb,
+};
+
+int ams_start_discover(struct bt_conn *conn, uint8_t timeout)
+{
+	int r = 0;
 
 	r = bt_ams_discover(conn, &ams_inst);
-	if (r) {
-		printk("discovery ams error %d", r);
-	}
+	k_sem_take(&ams_sem, K_SECONDS(timeout));
 
-	r = bt_cts_discover(conn, &cts_inst);
-	if (r) {
-		printk("discovery cts error %d", r);
+	return r;
+}
+
+static void ams_discover_cb(struct bt_ams *inst, int err)
+{
+	if (err) {
+		BT_DBG("ams discover failed");
 	}
+	k_sem_give(&ams_sem);
+}
+
+struct bt_ams_cb bt_ams_callbacks = {
+	.discover = ams_discover_cb,
+};
+
+int ancs_start_discover(struct bt_conn *conn, uint8_t timeout)
+{
+	int r = 0;
 
 	r = bt_ancs_discover(conn, &ancs_inst);
-	if (r) {
-		printk("discovery ancs error %d", r);
+	k_sem_take(&ancs_sem, K_SECONDS(timeout));
+
+	return r;
+}
+
+static void ancs_discover_cb(struct bt_ancs *inst, int err)
+{
+	if (err) {
+		BT_DBG("ancs discover failed");
 	}
+	k_sem_give(&ancs_sem);
+}
+
+struct bt_ancs_cb bt_ancs_callbacks = {
+	.discover = ancs_discover_cb,
+};
+
+static void connected(struct bt_conn *conn, uint8_t err)
+{
+	if (err) {
+		printk("Failed to connect %d\n", err);
+		return;
+	}
+	if (!default_conn) {
+		default_conn = bt_conn_ref(conn);
+	}
+	sys_push_msg(MSG_TYPE_BLE_CONNECTED);
+	printk("Connected\n");
 }
 
 static void disconnected(struct bt_conn* conn, uint8_t err)
 {
+	if (default_conn == conn) {
+		bt_conn_unref(default_conn);
+		default_conn = NULL;
+	}
+	sys_push_msg(MSG_TYPE_BLE_DISCONNECTED);
 	printk("Disconnected\n");
 }
 
@@ -97,14 +186,25 @@ static void auth_cancel(struct bt_conn *conn)
 	printk("Pairing cancelled: %s\n", addr);
 }
 
+static void auth_pairing_complete(struct bt_conn *conn, bool bonded)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	printk("Pairing completeed: %s\n", bonded ? "true" : "false");
+}
+
 static struct bt_conn_auth_cb auth_cb_display = {
 	.passkey_display = auth_passkey_display,
 	.passkey_entry = NULL,
 	.cancel = auth_cancel,
+	.pairing_complete = auth_pairing_complete,
 };
 
 void main(void)
 {
+	struct k_mbox_msg recv_msg;
 	printk("Hello World! %s\n", CONFIG_BOARD);
 
 	int error = bt_enable(NULL);
@@ -124,9 +224,41 @@ void main(void)
 		return;
 	}
 
+	default_conn = NULL;
 
-	while (1)
-	{
-		k_sleep(K_MSEC(1000));
+	bt_cts_client_cb_register(&cts_inst, &bt_cts_callbacks);
+	bt_ams_client_cb_register(&ams_inst, &bt_ams_callbacks);
+	bt_ancs_client_cb_register(&ancs_inst, &bt_ancs_callbacks);
+
+	while (1) {
+		recv_msg.info = -1;
+		recv_msg.info = 1024;
+		recv_msg.rx_source_thread = K_ANY;
+
+		error = k_mbox_get(&main_mailbox, &recv_msg, main_buffer, K_FOREVER);
+
+		switch (recv_msg.info) {
+		case MSG_TYPE_BLE_CONNECTED:
+			cts_start_discover(default_conn, BT_DISCOVER_DELAY);
+			ams_start_discover(default_conn, BT_DISCOVER_DELAY);
+			ancs_start_discover(default_conn, BT_DISCOVER_DELAY);
+
+			printk("MSG_TYPE_BLE_CONNECTED Done\n");
+			break;
+
+		case MSG_TYPE_BLE_DISCONNECTED:
+			//cts_client_reset();
+			//ams_client_reset();
+			//ancs_client_reset();
+			printk("MSG_TYPE_BLE_DISCONNECTED Done\n");
+			break;
+
+		case MSG_TYPE_ACCEL_RAW:
+			break;
+
+		default:
+			break;
+		}
+
 	}
 }
