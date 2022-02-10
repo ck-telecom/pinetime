@@ -4,8 +4,10 @@
 Hypnos do not update any more, this is a new home for zephyr based PineTime
 
 Most impotant feature:
-- [ ] Apple Media Service client
-- [ ] Apple Notification Service client
+- [x] Apple Media Service client
+- [x] Apple Notification Service client
+- [x] CTS
+- [x] ANS
 
 #### Initialization
 ```
