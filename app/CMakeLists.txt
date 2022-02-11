@@ -30,13 +30,14 @@ target_sources(app PRIVATE src/bluetooth/service/ams_client.c)
 target_sources(app PRIVATE src/bluetooth/service/ancs_client.c)
 target_sources(app PRIVATE src/bluetooth/service/ans_client.c)
 
-#target_sources(app PRIVATE src/screens/home.c)
-#target_sources(app PRIVATE src/screens/clock_face.c)
+target_sources(app PRIVATE src/apps/app.c)
+#target_sources(app PRIVATE src/apps/clock_face.c)
 #target_sources(app PRIVATE src/screens/date_settings.c)
-#target_sources(app PRIVATE src/view.c)
+target_sources(app PRIVATE src/apps/app/clock.c)
 
-zephyr_include_directories(.)
+zephyr_include_directories(src)
 zephyr_include_directories(src/bluetooth/service)
+zephyr_include_directories(src/apps)
 
 execute_process(COMMAND git rev-parse --short HEAD
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

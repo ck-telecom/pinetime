@@ -17,6 +17,7 @@
 #include "ancs_c.h"
 
 #include "msg_def.h"
+#include "app.h"
 
 #define BT_DISCOVER_DELAY 1 /* in s */
 
@@ -51,8 +52,17 @@ void sys_push_msg(uint32_t msg_type)
 	k_mbox_async_put(&main_mailbox, &send_msg, NULL);
 }
 
-void sys_push_msg_with_data(uint32_t msg_type, void *data, int size)
+void sys_push_msg_with_data(uint32_t msg_type, void *data, size_t size)
 {
+	struct k_mbox_msg send_msg;
+
+	send_msg.info = msg_type;
+	send_msg.size = size;
+	send_msg.tx_data = data;
+	send_msg.tx_block.data = NULL;
+	send_msg.tx_target_thread = K_ANY;
+
+	k_mbox_async_put(&main_mailbox, &send_msg, NULL);
 }
 
 int cts_start_discover(struct bt_conn *conn, uint8_t timeout)
@@ -239,6 +249,8 @@ void main(void)
 
 		switch (recv_msg.info) {
 		case MSG_TYPE_BLE_CONNECTED:
+			app_push_msg(MSG_TYPE_BLE_CONNECTED);
+
 			cts_start_discover(default_conn, BT_DISCOVER_DELAY);
 			ams_start_discover(default_conn, BT_DISCOVER_DELAY);
 			ancs_start_discover(default_conn, BT_DISCOVER_DELAY);
@@ -247,10 +259,18 @@ void main(void)
 			break;
 
 		case MSG_TYPE_BLE_DISCONNECTED:
+			app_push_msg(MSG_TYPE_BLE_DISCONNECTED);
+
 			//cts_client_reset();
 			//ams_client_reset();
 			//ancs_client_reset();
 			printk("MSG_TYPE_BLE_DISCONNECTED Done\n");
+			break;
+
+		case MSG_TYPE_BTN_DOWN:
+		case MSG_TYPE_BTN_UP:
+		case MSG_TYPE_BTN_LONG_PRESSED:
+			app_push_msg(recv_msg.info);
 			break;
 
 		case MSG_TYPE_ACCEL_RAW:

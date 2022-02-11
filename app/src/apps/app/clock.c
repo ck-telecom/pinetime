@@ -8,9 +8,9 @@ clock_app_t clock_app = {
 
 static inline clock_app_t *_from_app(app_t *app)
 {
-	return container_of(app, clock_app_t, app);
+	return CONTAINER_OF(app, clock_app_t, app);
 }
-
+#if 0
 static void anim_y_cb(void * var, int32_t v)
 {
 	lv_obj_set_y(var, v);
@@ -140,25 +140,25 @@ static lv_obj_t *screen_clock_create(clock_app_t *ht, lv_obj_t *parent)
 
     return scr;
 }
-
+#endif
 static void clock_update_task(lv_task_t *task)
 {
 	app_t *app = task->user_data;
 	clock_app_t *htapp = _from_app(app);
 
-	update(app);
+	//update(app);
 }
 
 static int clock_init(app_t *app, lv_obj_t *parent)
 {
 	clock_app_t *htapp = _from_app(app);
-	htapp->screen = screen_clock_create(htapp, parent);
+	//htapp->screen = screen_clock_create(htapp, parent);
 
 	htapp->lv_task_clock = lv_task_create(clock_update_task, 500, LV_TASK_PRIO_MID, app);
 
 	return 0;
 }
-
+#if 0
 static int update(app_t *app)
 {
     UTCTimeStruct time_tmp;
@@ -235,7 +235,7 @@ static int gesture(app_t *app, enum appGestures gesture)
     }
     return 0;
 }
-
+#endif
 static int clock_exit(app_t *app)
 {
 	clock_app_t *ht = _from_app(app);
@@ -251,5 +251,6 @@ static int clock_exit(app_t *app)
 static const app_spec_t clock_spec = {
 	.name = "clock",
 	.init = clock_init,
+	//.event = app_event_handler,
 	.exit = clock_exit,
 };
