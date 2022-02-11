@@ -7,8 +7,6 @@
 
 #include "msg_def.h"
 
-
-
 typedef struct _app app_t;
 
 typedef struct app_spec {

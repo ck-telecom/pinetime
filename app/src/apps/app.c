@@ -19,19 +19,28 @@ LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 static uint8_t app_buffer[1024];
 
-int app_init(app_t *app, lv_obj_t * parent)
+int app_init(app_t *app, lv_obj_t *parent)
 {
-	return app->spec->init(app, parent);
+	if (app->spec->init)
+		return app->spec->init(app, parent);
+
+	return 0;
 }
 
 int app_exit(app_t *app)
 {
-	return app->spec->exit(app);
+	if (app->spec->exit)
+		return app->spec->exit(app);
+
+	return 0;
 }
 
 int app_event(app_t *app, uint32_t event, unsigned long data)
 {
-	return app->spec->event(app, event, data);
+	if (app->spec->event)
+		return app->spec->event(app, event, data);
+
+	return 0;
 }
 
 int app_generic_event_handler(app_t *app, uint32_t event, unsigned long data)
@@ -165,12 +174,18 @@ void app_thread(void* arg1, void *arg2, void *arg3)
 			break;
 
 		default:
-			//if (pinetimecosapp.running_app)
-				//app_event_handler(pinetimecosapp.running_app, recv_msg.info, app_buffer);
 			break;
 		}
+
+		if (pinetimecosapp.running_app) {
+			app_event(pinetimecosapp.running_app, recv_msg.info, app_buffer);
+		}
+
+#if (LVGL_VERSION_MAJOR < 8)
 		lv_task_handler();
-		//lv_timer_handler();
+#else
+		lv_timer_handler();
+#endif
 	}
 }
 K_THREAD_DEFINE(app, APP_STACK_SIZE, app_thread, &context, NULL, NULL, APP_PRIORITY, 0, 0);
