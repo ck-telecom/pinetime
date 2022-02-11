@@ -115,7 +115,7 @@ static uint8_t primary_discover_func(struct bt_conn *conn,
 	struct bt_cts *inst = CONTAINER_OF(client_inst, struct bt_cts, cli);
 
 	if (attr == NULL) {
-		BT_DBG("Could not find a AMS instance on the server");
+		BT_DBG("Could not find a CTS instance on the server");
 		if (inst->cli.cb && inst->cli.cb->discover) {
 			inst->cli.cb->discover(inst, -ENODATA);
 		}
