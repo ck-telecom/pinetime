@@ -145,7 +145,8 @@ void app_thread(void* arg1, void *arg2, void *arg3)
 	struct k_mbox_msg recv_msg;
 	int ret;
 	k_timeout_t timeout = K_MSEC(10);
-
+	unsigned int passkey;
+	bool bonded;
 	display_dev = device_get_binding(CONFIG_LVGL_DISPLAY_DEV_NAME);
 	if (display_dev == NULL) {
 		LOG_ERR("device %s not found", CONFIG_LVGL_DISPLAY_DEV_NAME);
@@ -160,9 +161,9 @@ void app_thread(void* arg1, void *arg2, void *arg3)
 
 	while (1) {
 		recv_msg.info = -1;
-		recv_msg.info = 1024;
+		recv_msg.size = 1024;
 		recv_msg.rx_source_thread = K_ANY;
-
+		memset(app_buffer, 0, sizeof(app_buffer));
 		ret = k_mbox_get(&app_mailbox, &recv_msg, app_buffer, timeout);
 
 		switch (recv_msg.info) {
@@ -171,6 +172,18 @@ void app_thread(void* arg1, void *arg2, void *arg3)
 			break;
 
 		case MSG_TYPE_BLE_DISCONNECTED:
+			break;
+
+		case MSG_TYPE_BLE_PASSKEY:
+			LOG_DBG("size:%d", recv_msg.size);
+			memcpy((void *)&passkey, (void *)app_buffer, sizeof(passkey));
+			LOG_INF("Passkey: %06u", passkey);
+			break;
+
+		case MSG_TYPE_BLE_PAIRING_END:
+			LOG_DBG("size:%d", recv_msg.size);
+			memcpy((void *)&bonded, (void *)app_buffer, sizeof(bool));
+			LOG_INF("bonded: %s", bonded ? "true" : "false");
 			break;
 
 		default:

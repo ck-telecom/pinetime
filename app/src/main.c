@@ -25,6 +25,8 @@ struct bt_cts cts_inst;
 struct bt_ams ams_inst;
 struct bt_ancs ancs_inst;
 
+struct ble_conn_context ble_ctx;
+
 static struct bt_conn *default_conn;
 
 K_MBOX_DEFINE(main_mailbox);
@@ -139,6 +141,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	}
 	if (!default_conn) {
 		default_conn = bt_conn_ref(conn);
+		ble_ctx.default_conn = default_conn;
 	}
 	sys_push_msg(MSG_TYPE_BLE_CONNECTED);
 	printk("Connected\n");
@@ -149,6 +152,7 @@ static void disconnected(struct bt_conn* conn, uint8_t err)
 	if (default_conn == conn) {
 		bt_conn_unref(default_conn);
 		default_conn = NULL;
+		ble_ctx.default_conn = NULL;
 	}
 	sys_push_msg(MSG_TYPE_BLE_DISCONNECTED);
 	printk("Disconnected\n");
@@ -180,10 +184,13 @@ static struct bt_conn_cb conn_callbacks = {
 
 static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
 {
+	struct ble_conn_context *ble_ctx =
+		CONTAINER_OF(conn, struct ble_conn_context, default_conn);
 	char addr[BT_ADDR_LE_STR_LEN];
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
+	ble_ctx->passkey = passkey;
+	app_push_msg_with_data(MSG_TYPE_BLE_PASSKEY, &ble_ctx->passkey, sizeof(ble_ctx->passkey));
 	printk("Passkey for %s: %06u\n", addr, passkey);
 }
 
@@ -198,10 +205,14 @@ static void auth_cancel(struct bt_conn *conn)
 
 static void auth_pairing_complete(struct bt_conn *conn, bool bonded)
 {
+	struct ble_conn_context *ble_ctx =
+		CONTAINER_OF(conn, struct ble_conn_context, default_conn);
+
 	char addr[BT_ADDR_LE_STR_LEN];
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
+	ble_ctx->bonded = bonded;
+	app_push_msg_with_data(MSG_TYPE_BLE_PAIRING_END, &ble_ctx->bonded, sizeof(bool));
 	printk("Pairing completeed: %s\n", bonded ? "true" : "false");
 }
 
@@ -242,7 +253,7 @@ void main(void)
 
 	while (1) {
 		recv_msg.info = -1;
-		recv_msg.info = 1024;
+		recv_msg.size = 1024;
 		recv_msg.rx_source_thread = K_ANY;
 
 		error = k_mbox_get(&main_mailbox, &recv_msg, main_buffer, K_FOREVER);

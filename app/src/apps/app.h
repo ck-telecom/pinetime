@@ -32,6 +32,12 @@ enum app_state {
 	APP_SLEEP
 };
 
+struct ble_conn_context {
+	struct bt_conn *default_conn;
+	unsigned int passkey;
+	bool bonded;
+};
+
 struct app_context {
 //     enum appGestures gestureDir;
 //     enum RefreshDirections refreshDirection;
@@ -46,5 +52,7 @@ struct app_context {
 void load_application(enum apps app/*, enum RefreshDirections dir*/);
 
 void app_push_msg(enum msg_type msg_type);
+
+void app_push_msg_with_data(enum msg_type msg_type, void *data, size_t size);
 
 #endif /* _APP_H */

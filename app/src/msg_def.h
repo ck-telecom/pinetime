@@ -8,6 +8,8 @@ enum msg_type {
 	MSG_TYPE_BTN_DOWN,
 	MSG_TYPE_BTN_UP,
 	MSG_TYPE_BTN_LONG_PRESSED,
+	MSG_TYPE_BLE_PASSKEY,
+	MSG_TYPE_BLE_PAIRING_END,
 };
 
 struct msg_ble_conn {
