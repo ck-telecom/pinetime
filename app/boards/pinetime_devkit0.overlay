@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 / {
 	aliases {
-		pwm-motor = &pwm_led1;
+		vibrator = &pwm_vibrator;
 		charger = &charger_pin;
 	};
 
@@ -12,9 +12,9 @@
 			label = "backlight";
 		};
 
-		pwm_led1: pwm_led_1 {
+		pwm_vibrator: pwm_vibrator {
 			pwms = <&pwm0 16>;
-			label = "pwm motor";
+			label = "pwm vibrator";
 		};
 	};
 

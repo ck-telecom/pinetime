@@ -24,4 +24,6 @@ struct vibrate_pattern {
 
 void vibrator_command(enum vibrator_cmd cmd);
 
+void vibrator_stop(void);
+
 #endif
