@@ -99,9 +99,9 @@ void vibrator_command(enum vibrator_cmd cmd)
 	}
 }
 
-void vibrator_play_pattern(const struct vibrate_pattern *pattern)
+void vibrator_disable()
 {
-
+	pwm_pin_set_usec(pwm_dev, PWM_CHANNEL, 0, 0, PWM_FLAGS);
 }
 
 void vibrator_stop(void)
@@ -141,6 +141,7 @@ static void vibrator_thread()
 		while (buf_idx < current_pattern->length) {
 			vibrator_hw_set_frequency(current_pattern->buffer[buf_idx].frequency);
 			k_sleep(K_MSEC(current_pattern->buffer[buf_idx].duration_ms));
+			vibrator_disable();
 			if (k_msgq_get(&vibrator_q, &current_pattern, K_NO_WAIT)) {
 				/* if we just recieved another pattern (including stop), start playing it from the beginning */
 				buf_idx = 0;
