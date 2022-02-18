@@ -13,11 +13,20 @@ static void accel_data_service_cb(uint32_t command, void *data, void *context)
 	}
 }
 
-void accel_data_service_subscribe(uint32_t samples_per_update, AccelDataHandler handler)
+void accel_data_service_subscribe(uint32_t samples_per_update, accel_data_handler_t handler)
 {
-	AccelDataHandler *handler = app_alloc(sizeof(AccelDataHandler));
+	accel_data_handler_t *handler = app_alloc(sizeof(accel_data_handler_t));
 
 	//TODO: set sensor attr samples_per_update;
 
 	event_service_subscribe_with_context(MSG_TYPE_ACCEL_RAW, accel_data_service_cb, handler);
+}
+
+void accel_data_service_unsubscribe(void)
+{
+	void *context = event_service_get_context(MSG_TYPE_ACCEL_RAW);
+	if (context)
+		app_free(context);
+
+	event_service_unsubscribe(MSG_TYPE_ACCEL_RAW);
 }

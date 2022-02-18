@@ -39,6 +39,8 @@ zephyr_include_directories(src)
 zephyr_include_directories(src/bluetooth/service)
 zephyr_include_directories(src/apps)
 
+add_subdirectory(src)
+
 execute_process(COMMAND git rev-parse --short HEAD
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 OUTPUT_VARIABLE PROJECT_GIT_COMMIT_HASH
