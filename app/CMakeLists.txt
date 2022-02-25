@@ -31,9 +31,9 @@ target_sources(app PRIVATE src/bluetooth/service/ancs_client.c)
 target_sources(app PRIVATE src/bluetooth/service/ans_client.c)
 
 target_sources(app PRIVATE src/apps/app.c)
-#target_sources(app PRIVATE src/apps/clock_face.c)
 target_sources(app PRIVATE src/apps/app/clock.c)
 target_sources(app PRIVATE src/apps/app/music.c)
+target_sources(app PRIVATE src/apps/app/passkey.c)
 
 zephyr_include_directories(src)
 zephyr_include_directories(src/bluetooth/service)

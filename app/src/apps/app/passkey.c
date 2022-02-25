@@ -12,7 +12,7 @@ static inline passkey_app_t *_from_app(app_t *app)
 {
     return CONTAINER_OF(app, passkey_app_t, app);
 }
-
+#if 0
 static void event_handler(lv_event_t * e)
 {
     lv_event_code_t code = lv_event_get_code(e);
@@ -22,11 +22,11 @@ static void event_handler(lv_event_t * e)
         load_application(Clock/*, AnimNone*/);
     }
 }
-
+#endif
 static lv_obj_t *screen_create(passkey_app_t *ht, lv_obj_t * parent)
 {
-    lv_obj_t *scr = lv_obj_create(parent);
-
+    lv_obj_t *scr = lv_obj_create(parent, NULL);
+#if 0
     lv_obj_clear_flag(scr, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_clear_flag(scr, LV_OBJ_FLAG_SCROLL_ELASTIC);
     lv_obj_remove_style_all(scr);                            /*Make it transparent*/
@@ -56,11 +56,11 @@ static lv_obj_t *screen_create(passkey_app_t *ht, lv_obj_t * parent)
     label = lv_label_create(btn1);
     lv_label_set_text(label, "Del Bounds");
     lv_obj_center(label);
-
+#endif
     return scr;
 }
 
-static int init(app_t *app, lv_obj_t *parent)
+static int passkey_init(app_t *app, lv_obj_t *parent)
 {
     passkey_app_t *htapp = _from_app(app);
     htapp->screen = screen_create(htapp, parent);

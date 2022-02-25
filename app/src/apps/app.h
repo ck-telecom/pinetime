@@ -24,6 +24,7 @@ struct _app {
 enum apps {
 	HOME,
 	CLOCK,
+	PASSKEY,
 	DATE_SETTINGS_ID
 };
 
@@ -36,6 +37,10 @@ struct ble_conn_context {
 	struct bt_conn *default_conn;
 	unsigned int passkey;
 	bool bonded;
+};
+
+struct pinetimecos {
+	unsigned int passkey;
 };
 
 struct app_context {

@@ -7,12 +7,14 @@
 
 #include "app.h"
 #include "app/clock.h"
+#include "app/passkey.h"
 
 #define APP_STACK_SIZE      1024
 #define APP_PRIORITY        5
 
 static struct app_context context;
 static struct app_context pinetimecosapp;
+static struct pinetimecos pinetimecos;
 K_MBOX_DEFINE(app_mailbox);
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
@@ -79,12 +81,12 @@ void load_application(enum apps app/*, enum RefreshDirections dir*/)
     //set_refresh_direction(dir);
     //pinetimecosapp.activeApp = app;
 	switch (app) {
-/*
-	case Passkey:
-		run_app(APP_PASSKEY);
-		return_app(Clock, DirBottom, AnimNone);
-		break;
 
+	case PASSKEY:
+		run_app(APP_PASSKEY);
+		return_app(CLOCK/*, DirBottom, AnimNone*/);
+		break;
+/*
 	case Debug:
 		run_app(APP_DEBUG);
 		return_app(Menu, DirTop, AnimUp);
@@ -145,7 +147,7 @@ void app_thread(void* arg1, void *arg2, void *arg3)
 	struct k_mbox_msg recv_msg;
 	int ret;
 	k_timeout_t timeout = K_MSEC(10);
-	unsigned int passkey;
+
 	bool bonded;
 	display_dev = device_get_binding(CONFIG_LVGL_DISPLAY_DEV_NAME);
 	if (display_dev == NULL) {
@@ -176,22 +178,20 @@ void app_thread(void* arg1, void *arg2, void *arg3)
 
 		case MSG_TYPE_BLE_PASSKEY:
 			LOG_DBG("size:%d", recv_msg.size);
-			memcpy((void *)&passkey, (void *)app_buffer, sizeof(passkey));
-			LOG_INF("Passkey: %06u", passkey);
+			memcpy((void *)&pinetimecos.passkey, (void *)app_buffer, sizeof(pinetimecos.passkey));
+			LOG_INF("Passkey: %06u", pinetimecos.passkey);
+			load_application(PASSKEY);
 			break;
 
 		case MSG_TYPE_BLE_PAIRING_END:
 			LOG_DBG("size:%d", recv_msg.size);
 			memcpy((void *)&bonded, (void *)app_buffer, sizeof(bool));
 			LOG_INF("bonded: %s", bonded ? "true" : "false");
+			load_application(CLOCK);
 			break;
 
 		default:
 			break;
-		}
-
-		if (pinetimecosapp.running_app) {
-			app_event(pinetimecosapp.running_app, recv_msg.info, app_buffer);
 		}
 
 #if (LVGL_VERSION_MAJOR < 8)
