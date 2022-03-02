@@ -73,7 +73,7 @@ static void advertise(struct k_work *work)
 {
 	int rc;
 
-	bt_le_adv_stop();
+//	bt_le_adv_stop();
 
 	rc = bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL, 0);
 	if (rc) {

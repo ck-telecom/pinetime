@@ -38,6 +38,7 @@ target_sources(app PRIVATE src/bluetooth/service/ans_client.c)
 #target_sources(app PRIVATE src/apps/app/passkey.c)
 
 zephyr_include_directories(src)
+zephyr_include_directories(src/bluetooth)
 zephyr_include_directories(src/bluetooth/service)
 zephyr_include_directories(src/apps)
 

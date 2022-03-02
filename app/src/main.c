@@ -18,6 +18,7 @@
 
 #include "msg_def.h"
 //#include "app.h"
+#include "bt.h"
 
 #define BT_DISCOVER_DELAY 1 /* in s */
 
@@ -227,7 +228,7 @@ void main(void)
 {
 	struct k_mbox_msg recv_msg;
 	printk("Hello World! %s\n", CONFIG_BOARD);
-	int error = 0;	
+	int error = 0;
 #if 0
 	int error = bt_enable(NULL);
 		if (error) {
@@ -251,7 +252,10 @@ void main(void)
 	bt_cts_client_cb_register(&cts_inst, &bt_cts_callbacks);
 	bt_ams_client_cb_register(&ams_inst, &bt_ams_callbacks);
 	bt_ancs_client_cb_register(&ancs_inst, &bt_ancs_callbacks);
+#else
+	app_bt_init();
 #endif
+
 	while (1) {
 		recv_msg.info = -1;
 		recv_msg.size = 1024;
