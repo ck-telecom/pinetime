@@ -1,0 +1,15 @@
+#
+# Copyright (c) 2018 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+menu "Bluetooth Low Energy"
+
+if BT
+
+rsource "Kconfig.discovery"
+
+endif # BT
+
+endmenu

@@ -1,5 +1,6 @@
 menu "Pinetime"
 
 rsource "drivers/Kconfig"
+rsource "bluetooth/Kconfig"
 
 endmenu

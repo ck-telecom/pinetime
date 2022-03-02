@@ -1,0 +1,30 @@
+#
+# Copyright (c) 2019 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+menuconfig BT_GATT_DM
+	bool "GATT Discovery Manager library"
+	help
+	  Enable BLE GATT Discovery Manager library
+
+if BT_GATT_DM
+
+config BT_GATT_DM_MAX_ATTRS
+	int "Maximum number of attributes that can be present in the discovered service"
+	default 35
+	help
+	  Maximum number of attributes that can be present in the discovered service.
+
+config BT_GATT_DM_DATA_PRINT
+	bool "Enable functions for printing discovery related data"
+	depends on BT_DEBUG
+	help
+	  Enable functions for printing discovery related data
+
+module = BT_GATT_DM
+module-str = GATT database discovery
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif # BT_GATT_DM
