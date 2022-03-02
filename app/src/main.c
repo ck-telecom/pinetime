@@ -227,6 +227,7 @@ void main(void)
 {
 	struct k_mbox_msg recv_msg;
 	printk("Hello World! %s\n", CONFIG_BOARD);
+	int error = 0;	
 #if 0
 	int error = bt_enable(NULL);
 		if (error) {
