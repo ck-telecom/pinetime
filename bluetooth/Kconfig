@@ -10,6 +10,8 @@ if BT
 
 rsource "Kconfig.discovery"
 
+
+rsource "services/Kconfig"
 endif # BT
 
 endmenu

@@ -17,6 +17,6 @@ zephyr_library_sources_ifdef(CONFIG_BT_GATT_DM gatt_dm.c)
 #add_subdirectory_ifdef(CONFIG_BT_LL_SOFTDEVICE controller)
 #add_subdirectory_ifdef(CONFIG_BT_MESH mesh)
 
-#add_subdirectory_ifdef(CONFIG_BT_NRF_SERVICES services)
+add_subdirectory_ifdef(CONFIG_BT_NRF_SERVICES services)
 
 #add_subdirectory_ifdef(CONFIG_BT_RPC rpc)
