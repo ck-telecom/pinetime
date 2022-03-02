@@ -9,6 +9,8 @@
 #include <bluetooth/gap.h>
 #include <settings/settings.h>
 
+#include "gatt_dm.h"
+
 //#define LOG_LEVEL LOG_LEVEL_DBG
 LOG_MODULE_REGISTER(BT_APP, LOG_LEVEL_INF);
 
@@ -82,12 +84,53 @@ static void advertise(struct k_work *work)
 	LOG_INF("Advertising successfully started");
 }
 
+static void discover_all_completed(struct bt_gatt_dm *dm, void *ctx)
+{
+	char uuid_str[37];
+
+	const struct bt_gatt_dm_attr *gatt_service_attr =
+			bt_gatt_dm_service_get(dm);
+	const struct bt_gatt_service_val *gatt_service =
+			bt_gatt_dm_attr_service_val(gatt_service_attr);
+
+	size_t attr_count = bt_gatt_dm_attr_cnt(dm);
+
+	bt_uuid_to_str(gatt_service->uuid, uuid_str, sizeof(uuid_str));
+	printk("Found service %s\n", uuid_str);
+	printk("Attribute count: %d\n", attr_count);
+#if CONFIG_BT_GATT_DM_DATA_PRINT
+	bt_gatt_dm_data_print(dm);
+#endif
+	bt_gatt_dm_data_release(dm);
+
+	bt_gatt_dm_continue(dm, NULL);
+}
+
+static void discover_all_service_not_found(struct bt_conn *conn, void *ctx)
+{
+	printk("No more services\n");
+}
+
+static void discover_all_error_found(struct bt_conn *conn, int err, void *ctx)
+{
+	printk("The discovery procedure failed, err %d\n", err);
+}
+
+static struct bt_gatt_dm_cb discover_all_cb = {
+	.completed = discover_all_completed,
+	.service_not_found = discover_all_service_not_found,
+	.error_found = discover_all_error_found,
+};
+
 static void connected(struct bt_conn *conn, uint8_t err)
 {
 	if (err) {
 		return;
 	}
-
+	err = bt_gatt_dm_start(conn, NULL, &discover_all_cb, NULL);
+	if (err) {
+		printk("Failed to start discovery (err %d)\n", err);
+	}
 	LOG_INF("connected");
 }
 
