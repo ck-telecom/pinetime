@@ -17,7 +17,7 @@
 #include "ancs_c.h"
 
 #include "msg_def.h"
-#include "app.h"
+//#include "app.h"
 
 #define BT_DISCOVER_DELAY 1 /* in s */
 
@@ -25,7 +25,7 @@ struct bt_cts cts_inst;
 struct bt_ams ams_inst;
 struct bt_ancs ancs_inst;
 
-struct ble_conn_context ble_ctx;
+//struct ble_conn_context ble_ctx;
 
 static struct bt_conn *default_conn;
 
@@ -141,9 +141,9 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	}
 	if (!default_conn) {
 		default_conn = bt_conn_ref(conn);
-		ble_ctx.default_conn = default_conn;
+		//ble_ctx.default_conn = default_conn;
 	}
-	sys_push_msg(MSG_TYPE_BLE_CONNECTED);
+	//sys_push_msg(MSG_TYPE_BLE_CONNECTED);
 	printk("Connected\n");
 }
 
@@ -152,9 +152,9 @@ static void disconnected(struct bt_conn* conn, uint8_t err)
 	if (default_conn == conn) {
 		bt_conn_unref(default_conn);
 		default_conn = NULL;
-		ble_ctx.default_conn = NULL;
+		//ble_ctx.default_conn = NULL;
 	}
-	sys_push_msg(MSG_TYPE_BLE_DISCONNECTED);
+	//sys_push_msg(MSG_TYPE_BLE_DISCONNECTED);
 	printk("Disconnected\n");
 }
 
@@ -184,13 +184,13 @@ static struct bt_conn_cb conn_callbacks = {
 
 static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
 {
-	struct ble_conn_context *ble_ctx =
-		CONTAINER_OF(conn, struct ble_conn_context, default_conn);
+//	struct ble_conn_context *ble_ctx =
+//		CONTAINER_OF(conn, struct ble_conn_context, default_conn);
 	char addr[BT_ADDR_LE_STR_LEN];
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-	ble_ctx->passkey = passkey;
-	app_push_msg_with_data(MSG_TYPE_BLE_PASSKEY, &ble_ctx->passkey, sizeof(ble_ctx->passkey));
+//	ble_ctx->passkey = passkey;
+//	app_push_msg_with_data(MSG_TYPE_BLE_PASSKEY, &ble_ctx->passkey, sizeof(ble_ctx->passkey));
 	printk("Passkey for %s: %06u\n", addr, passkey);
 }
 
@@ -205,14 +205,14 @@ static void auth_cancel(struct bt_conn *conn)
 
 static void auth_pairing_complete(struct bt_conn *conn, bool bonded)
 {
-	struct ble_conn_context *ble_ctx =
-		CONTAINER_OF(conn, struct ble_conn_context, default_conn);
+	//struct ble_conn_context *ble_ctx =
+	//	CONTAINER_OF(conn, struct ble_conn_context, default_conn);
 
 	char addr[BT_ADDR_LE_STR_LEN];
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-	ble_ctx->bonded = bonded;
-	app_push_msg_with_data(MSG_TYPE_BLE_PAIRING_END, &ble_ctx->bonded, sizeof(bool));
+	//ble_ctx->bonded = bonded;
+	//app_push_msg_with_data(MSG_TYPE_BLE_PAIRING_END, &ble_ctx->bonded, sizeof(bool));
 	printk("Pairing completeed: %s\n", bonded ? "true" : "false");
 }
 
@@ -227,7 +227,7 @@ void main(void)
 {
 	struct k_mbox_msg recv_msg;
 	printk("Hello World! %s\n", CONFIG_BOARD);
-
+#if 0
 	int error = bt_enable(NULL);
 		if (error) {
 		printk("Bluetooth failed to enable (err %d)\n", error);
@@ -250,7 +250,7 @@ void main(void)
 	bt_cts_client_cb_register(&cts_inst, &bt_cts_callbacks);
 	bt_ams_client_cb_register(&ams_inst, &bt_ams_callbacks);
 	bt_ancs_client_cb_register(&ancs_inst, &bt_ancs_callbacks);
-
+#endif
 	while (1) {
 		recv_msg.info = -1;
 		recv_msg.size = 1024;
@@ -260,7 +260,7 @@ void main(void)
 
 		switch (recv_msg.info) {
 		case MSG_TYPE_BLE_CONNECTED:
-			app_push_msg(MSG_TYPE_BLE_CONNECTED);
+			//app_push_msg(MSG_TYPE_BLE_CONNECTED);
 
 			cts_start_discover(default_conn, BT_DISCOVER_DELAY);
 			ams_start_discover(default_conn, BT_DISCOVER_DELAY);
@@ -270,7 +270,7 @@ void main(void)
 			break;
 
 		case MSG_TYPE_BLE_DISCONNECTED:
-			app_push_msg(MSG_TYPE_BLE_DISCONNECTED);
+			//app_push_msg(MSG_TYPE_BLE_DISCONNECTED);
 
 			//cts_client_reset();
 			//ams_client_reset();
@@ -281,7 +281,7 @@ void main(void)
 		case MSG_TYPE_BTN_DOWN:
 		case MSG_TYPE_BTN_UP:
 		case MSG_TYPE_BTN_LONG_PRESSED:
-			app_push_msg(recv_msg.info);
+			//app_push_msg(recv_msg.info);
 			break;
 
 		case MSG_TYPE_ACCEL_RAW:
