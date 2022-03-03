@@ -26,12 +26,6 @@ target_sources(app PRIVATE src/main.c)
 
 target_sources(app PRIVATE src/bluetooth/bt.c)
 
-target_sources(app PRIVATE src/bluetooth/service/cts.c)
-target_sources(app PRIVATE src/bluetooth/service/cts_client.c)
-target_sources(app PRIVATE src/bluetooth/service/ams_client.c)
-target_sources(app PRIVATE src/bluetooth/service/ancs_client.c)
-target_sources(app PRIVATE src/bluetooth/service/ans_client.c)
-
 #target_sources(app PRIVATE src/apps/app.c)
 #target_sources(app PRIVATE src/apps/app/clock.c)
 #target_sources(app PRIVATE src/apps/app/music.c)

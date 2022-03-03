@@ -9,10 +9,23 @@
 #include <bluetooth/gap.h>
 #include <settings/settings.h>
 
-#include "gatt_dm.h"
+#include "bluetooth/gatt_dm.h"
+
+#include "bluetooth/services/cts_client.h"
+#include "bluetooth/services/ams_client.h"
+#include "bluetooth/services/ancs_client.h"
 
 //#define LOG_LEVEL LOG_LEVEL_DBG
 LOG_MODULE_REGISTER(BT_APP, LOG_LEVEL_INF);
+
+static struct bt_cts_client cts_c;
+static bool has_cts;
+
+struct bt_ams_client ams_c;
+static bool has_ams;
+
+struct bt_ancs_client ancs_c;
+static bool has_ancs;
 
 static void connected(struct bt_conn *conn, uint8_t err);
 static void disconnected(struct bt_conn *conn, uint8_t reason);
@@ -25,12 +38,35 @@ static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 };
 
+#if defined(CONFIG_BT_SMP)
+static void identity_resolved(struct bt_conn* conn, const bt_addr_le_t* rpa, const bt_addr_le_t* identity)
+{
+	printk("Identity resolved\n");
+}
+#endif
+
+#if defined(CONFIG_BT_SMP) || defined(CONFIG_BT_BREDR)
+static void security_changed(struct bt_conn* conn, bt_security_t level,
+			     enum bt_security_err err)
+{
+	printk("Security level changed\n");
+}
+#endif
+
 BT_CONN_CB_DEFINE(conn_callbacks) = {
 	.connected = connected,
 	.disconnected = disconnected,
 	.le_param_req = le_param_req,
 	.le_param_updated = le_param_updated,
+#if defined(CONFIG_BT_SMP)
+	.identity_resolved = identity_resolved,
+#endif
+#if defined(CONFIG_BT_SMP) || defined(CONFIG_BT_BREDR)
+	.security_changed = security_changed,
+#endif
 };
+
+
 
 static int settings_runtime_load(void)
 {
@@ -86,6 +122,7 @@ static void advertise(struct k_work *work)
 
 static void discover_all_completed(struct bt_gatt_dm *dm, void *ctx)
 {
+	int err;
 	char uuid_str[37];
 
 	const struct bt_gatt_dm_attr *gatt_service_attr =
@@ -98,6 +135,24 @@ static void discover_all_completed(struct bt_gatt_dm *dm, void *ctx)
 	bt_uuid_to_str(gatt_service->uuid, uuid_str, sizeof(uuid_str));
 	printk("Found service %s\n", uuid_str);
 	printk("Attribute count: %d\n", attr_count);
+
+	if (!bt_uuid_cmp(gatt_service->uuid, BT_UUID_CTS)) {
+		err = bt_cts_handles_assign(dm, &cts_c);
+		if (err == 0) {
+			has_cts = true;
+		}
+	} else if (!bt_uuid_cmp(gatt_service->uuid, BT_UUID_AMS)) {
+		err = bt_ams_handles_assign(dm, &ams_c);
+		if (err == 0) {
+			has_ams = true;
+		}
+	} else if (!bt_uuid_cmp(gatt_service->uuid, BT_UUID_ANCS)) {
+		err = bt_ancs_handles_assign(dm, &ancs_c);
+		if (err == 0) {
+			has_ancs = true;
+		}
+	}
+
 #if CONFIG_BT_GATT_DM_DATA_PRINT
 	bt_gatt_dm_data_print(dm);
 #endif
@@ -122,15 +177,63 @@ static struct bt_gatt_dm_cb discover_all_cb = {
 	.error_found = discover_all_error_found,
 };
 
+static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+//	ble_ctx->passkey = passkey;
+//	app_push_msg_with_data(MSG_TYPE_BLE_PASSKEY, &ble_ctx->passkey, sizeof(ble_ctx->passkey));
+	printk("Passkey for %s: %06u\n", addr, passkey);
+}
+
+static void auth_cancel(struct bt_conn *conn)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	printk("Pairing cancelled: %s\n", addr);
+}
+
+static void auth_pairing_complete(struct bt_conn *conn, bool bonded)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+	//ble_ctx->bonded = bonded;
+	//app_push_msg_with_data(MSG_TYPE_BLE_PAIRING_END, &ble_ctx->bonded, sizeof(bool));
+#if defined(CONFIG_BT_SMP) || defined(CONFIG_BT_BREDR)
+	int err = bt_gatt_dm_start(conn, NULL, &discover_all_cb, NULL);
+	if (err) {
+		printk("Failed to start discovery (err %d)\n", err);
+	}
+#endif
+	printk("Pairing completeed: %s\n", bonded ? "true" : "false");
+}
+
+static struct bt_conn_auth_cb auth_cb_display = {
+	.passkey_display = auth_passkey_display,
+	.passkey_entry = NULL,
+	.cancel = auth_cancel,
+	.pairing_complete = auth_pairing_complete,
+};
+
 static void connected(struct bt_conn *conn, uint8_t err)
 {
 	if (err) {
 		return;
 	}
+#if defined(CONFIG_BT_SMP) || defined(CONFIG_BT_BREDR)
+	if (bt_conn_get_security(conn) < BT_SECURITY_L1) {
+		bt_conn_set_security(conn, BT_SECURITY_L4);
+	}
+#else
 	err = bt_gatt_dm_start(conn, NULL, &discover_all_cb, NULL);
 	if (err) {
 		printk("Failed to start discovery (err %d)\n", err);
 	}
+#endif
 	LOG_INF("connected");
 }
 
@@ -154,6 +257,11 @@ int app_bt_init(void)
 	if (err) {
 		LOG_ERR("Bluetooth init failed (err %d)", err);
 		return err;
+	}
+
+	err = bt_conn_auth_cb_register(&auth_cb_display);
+	if (err) {
+		LOG_ERR("bt_conn_auth_cb_register error");
 	}
 #if 0
 	err = settings_load();
