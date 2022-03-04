@@ -13,6 +13,7 @@ Inspired by RebbleOS, this project API will be closed with Pebble API so that ma
 - [ ] Event Service
 - [ ] Timer
 - [ ] Storage
+- [x] Vibes
 
 Most impotant feature:
 - [x] Apple Media Service client
