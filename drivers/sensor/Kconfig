@@ -10,6 +10,4 @@ rsource "bma421/Kconfig"
 
 # rsource "hrs3300/Kconfig"
 
-rsource "cst816s/Kconfig"
-
 endif # SENSOR
