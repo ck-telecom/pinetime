@@ -133,8 +133,8 @@ static void discover_all_completed(struct bt_gatt_dm *dm, void *ctx)
 	size_t attr_count = bt_gatt_dm_attr_cnt(dm);
 
 	bt_uuid_to_str(gatt_service->uuid, uuid_str, sizeof(uuid_str));
-	printk("Found service %s\n", uuid_str);
-	printk("Attribute count: %d\n", attr_count);
+	//printk("Found service %s\n", uuid_str);
+	//printk("Attribute count: %d\n", attr_count);
 
 	if (!bt_uuid_cmp(gatt_service->uuid, BT_UUID_CTS)) {
 		err = bt_cts_handles_assign(dm, &cts_c);
@@ -221,12 +221,17 @@ static struct bt_conn_auth_cb auth_cb_display = {
 
 static void connected(struct bt_conn *conn, uint8_t err)
 {
+	int sec_err = 0;
 	if (err) {
 		return;
 	}
 #if defined(CONFIG_BT_SMP) || defined(CONFIG_BT_BREDR)
-	if (bt_conn_get_security(conn) < BT_SECURITY_L1) {
-		bt_conn_set_security(conn, BT_SECURITY_L4);
+	if (bt_conn_get_security(conn) < BT_SECURITY_L4) {
+		LOG_INF("set security level");
+		sec_err = bt_conn_set_security(conn, BT_SECURITY_L4);
+		if (sec_err) {
+			LOG_ERR("bt_conn_set_security error: %d", sec_err);
+		}
 	}
 #else
 	err = bt_gatt_dm_start(conn, NULL, &discover_all_cb, NULL);
@@ -259,21 +264,18 @@ int app_bt_init(void)
 		return err;
 	}
 
+	if (IS_ENABLED(CONFIG_SETTINGS)) {
+		err = settings_load();
+		if (err) {
+			LOG_ERR("Settings load failed (err %d)", err);
+		}
+	}
+
 	err = bt_conn_auth_cb_register(&auth_cb_display);
 	if (err) {
 		LOG_ERR("bt_conn_auth_cb_register error");
 	}
-#if 0
-	err = settings_load();
-	if (err) {
-		LOG_ERR("Settings load failed (err %d)", err);
-	}
 
-	err = settings_runtime_load();
-	if (err) {
-		LOG_ERR("Settings runtime load failed (err %d)", err);
-	}
-#endif
 	k_work_init(&advertise_work, advertise);
 	k_work_submit(&advertise_work);
 	LOG_INF("Bluetooth initialized");
