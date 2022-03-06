@@ -3,20 +3,25 @@
 
 #include <stdbool.h>
 
-struct app_worker_message {
+enum {
+	SOURCE_BACKGROUND,
+	SOURCE_FOREGROUND
+};
+
+typedef struct AppWorkerMessage {
 	uint16_t data0;
 	uint16_t data1;
 	uint16_t data2;
-} app_worker_message_t;
+} AppWorkerMessage;
 
-typedef void (*app_worker_message_handler_t)(uint16_t type, app_worker_message_t *data);
+typedef void (*AppWorkerMessageHandler)(uint16_t type, AppWorkerMessage *data);
 
 bool app_worker_is_running(void);
 
-bool app_worker_message_subscribe(app_worker_message_handler_t handler);
+bool app_worker_message_subscribe(AppWorkerMessageHandler handler);
 
 bool app_worker_message_unsubscribe(void);
 
-void app_worker_send_message(uint8_t type, app_worker_message_t *data);
+void app_worker_send_message(uint8_t type, AppWorkerMessage *data);
 
 #endif /* _APP_WORKER_H */
