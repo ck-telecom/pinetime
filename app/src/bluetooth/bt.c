@@ -15,6 +15,8 @@
 #include "bluetooth/services/ams_client.h"
 #include "bluetooth/services/ancs_client.h"
 
+#include <time.h>
+
 //#define LOG_LEVEL LOG_LEVEL_DBG
 LOG_MODULE_REGISTER(BT_APP, LOG_LEVEL_INF);
 
@@ -66,7 +68,24 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
 #endif
 };
 
+void bt_cts_read_callback(struct bt_cts_client *cts_c,
+		    struct bt_cts_current_time *current_time,
+		    int err)
+{
+	/* convert to unix timestamp */
+	if (err != 0) {
+		struct tm now;
 
+		now.tm_year = current_time->exact_time_256.year - 1900;
+		now.tm_mon = current_time->exact_time_256.month - 1;
+		now.tm_mday = current_time->exact_time_256.day;
+		now.tm_hour = current_time->exact_time_256.hours;
+		now.tm_min = current_time->exact_time_256.minutes;
+		now.tm_sec = current_time->exact_time_256.seconds;
+
+		mktime(&now);
+	}
+}
 
 static int settings_runtime_load(void)
 {
