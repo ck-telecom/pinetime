@@ -1,7 +1,7 @@
-# Pebble firmare for pinetime
+# pinetime
 
 #### Introduction
-Zephyr based PineTime firmware with Pebble API! Contribution is Welcomed!
+Hypnos do not update any more, this is a new home for zephyr based PineTime
 
 #### Hardware
 pinetine's flash only has 512KB, we will upgrade the hardware in some feture, not take too much long!
@@ -14,12 +14,6 @@ Inspired by RebbleOS, this project API will be closed with Pebble API so that ma
 - [ ] Timer
 - [ ] Storage
 - [x] Vibes
-- [ ] Animation
-- [ ] Graphics
-- [ ] Layers
-- [ ] Light
-- [ ] Window
-- [ ] Window Stack
 
 Most impotant feature:
 - [x] Apple Media Service client
@@ -49,3 +43,4 @@ west flash
 #### Debug
 ```
 west debug
+```
