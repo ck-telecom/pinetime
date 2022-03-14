@@ -25,10 +25,10 @@ target_sources(app PRIVATE src/main.c)
 
 target_sources(app PRIVATE src/bluetooth/bt.c)
 
-#target_sources(app PRIVATE src/apps/app.c)
-#target_sources(app PRIVATE src/apps/app/clock.c)
+target_sources(app PRIVATE src/apps/app.c)
+target_sources(app PRIVATE src/apps/app/clock.c)
 #target_sources(app PRIVATE src/apps/app/music.c)
-#target_sources(app PRIVATE src/apps/app/passkey.c)
+target_sources(app PRIVATE src/apps/app/passkey.c)
 
 zephyr_include_directories(src)
 zephyr_include_directories(src/bluetooth)

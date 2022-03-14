@@ -22,7 +22,7 @@ typedef struct clock_app {
 	lv_point_t minute_point[2];
 	lv_point_t second_point[2];
 
-	lv_task_t *lv_task_clock;
+	lv_timer_t *lv_timer_clock;
 } clock_app_t;
 
 #define HOUR_LENGTH     70
@@ -33,7 +33,7 @@ typedef struct clock_app {
 #define ARRAY_SIZE(a)  ( sizeof(a) / sizeof((a)[0]) )
 #endif
 
-#define LV_TRIG_SCALE   _lv_trigo_sin(90)
+#define LV_TRIG_SCALE   lv_trigo_sin(90)
 
 struct gua {
 	lv_point_t line_point[2];

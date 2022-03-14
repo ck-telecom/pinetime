@@ -25,7 +25,7 @@ static void event_handler(lv_event_t * e)
 #endif
 static lv_obj_t *screen_create(passkey_app_t *ht, lv_obj_t * parent)
 {
-    lv_obj_t *scr = lv_obj_create(parent, NULL);
+    lv_obj_t *scr = lv_obj_create(parent);
 #if 0
     lv_obj_clear_flag(scr, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_clear_flag(scr, LV_OBJ_FLAG_SCROLL_ELASTIC);

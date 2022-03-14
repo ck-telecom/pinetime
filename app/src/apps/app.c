@@ -45,11 +45,6 @@ int app_event(app_t *app, uint32_t event, unsigned long data)
 	return 0;
 }
 
-int app_generic_event_handler(app_t *app, uint32_t event, unsigned long data)
-{
-	return event_service_event_trigger(app, event, data);
-}
-
 static void run_app(app_t *app)
 {
 	if (app == pinetimecosapp.running_app) {
@@ -149,9 +144,9 @@ void app_thread(void* arg1, void *arg2, void *arg3)
 	k_timeout_t timeout = K_MSEC(10);
 
 	bool bonded;
-	display_dev = device_get_binding(CONFIG_LVGL_DISPLAY_DEV_NAME);
+	display_dev = device_get_binding(CONFIG_LV_Z_DISPLAY_DEV_NAME);
 	if (display_dev == NULL) {
-		LOG_ERR("device %s not found", CONFIG_LVGL_DISPLAY_DEV_NAME);
+		LOG_ERR("device %s not found", CONFIG_LV_Z_DISPLAY_DEV_NAME);
 		return;
 	}
 

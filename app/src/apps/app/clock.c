@@ -57,12 +57,12 @@ struct gua gua_lines[] = {
 
  static int16_t Cosine(int16_t angle)
 {
-	return _lv_trigo_sin(angle + 90);
+	return lv_trigo_sin(angle + 90);
 }
 
 static int16_t Sine(int16_t angle)
 {
-	return _lv_trigo_sin(angle);
+	return lv_trigo_sin(angle);
 }
 
 static int16_t coordinate_x_relocate(int16_t x)
@@ -76,39 +76,39 @@ static int16_t coordinate_y_relocate(int16_t y)
 
 static lv_obj_t *screen_clock_create(clock_app_t *ht, lv_obj_t *parent)
 {
-       lv_obj_t *scr = lv_obj_create(parent, NULL);
+       lv_obj_t *scr = lv_obj_create(parent);
 
 	lv_style_init(&ht->style_line);
 	lv_style_init(&ht->hour_line_style);
 	lv_style_init(&ht->minute_line_style);
 	lv_style_init(&ht->second_line_style);
 
-	lv_style_set_line_width(&ht->style_line, LV_STATE_DEFAULT, 3);
-	lv_style_set_line_color(&ht->style_line, LV_STATE_DEFAULT, LV_COLOR_PURPLE);
-	lv_style_set_line_rounded(&ht->style_line, LV_STATE_DEFAULT, true);
+	lv_style_set_line_width(&ht->style_line, 3);
+	//lv_style_set_line_color(&ht->style_line, LV_COLOR_PURPLE);
+	lv_style_set_line_rounded(&ht->style_line, true);
 
-	lv_style_set_line_width(&ht->hour_line_style, LV_STATE_DEFAULT, 7);
-	lv_style_set_line_color(&ht->hour_line_style, LV_STATE_DEFAULT, LV_COLOR_RED);
-	lv_style_set_line_rounded(&ht->hour_line_style, LV_STATE_DEFAULT, true);
+	lv_style_set_line_width(&ht->hour_line_style, 7);
+	//lv_style_set_line_color(&ht->hour_line_style, LV_COLOR_RED);
+	lv_style_set_line_rounded(&ht->hour_line_style, true);
 
-	lv_style_set_line_width(&ht->minute_line_style, LV_STATE_DEFAULT, 5);
-	lv_style_set_line_color(&ht->minute_line_style, LV_STATE_DEFAULT, LV_COLOR_GREEN);
-	lv_style_set_line_rounded(&ht->minute_line_style, LV_STATE_DEFAULT, true);
+	lv_style_set_line_width(&ht->minute_line_style, 5);
+	//lv_style_set_line_color(&ht->minute_line_style, LV_COLOR_GREEN);
+	lv_style_set_line_rounded(&ht->minute_line_style, true);
 
-	lv_style_set_line_width(&ht->second_line_style, LV_STATE_DEFAULT, 3);
-	lv_style_set_line_color(&ht->second_line_style, LV_STATE_DEFAULT, LV_COLOR_BLUE);
+	lv_style_set_line_width(&ht->second_line_style, 3);
+	//lv_style_set_line_color(&ht->second_line_style, LV_COLOR_BLUE);
 
-	ht->hour_body = lv_line_create(parent, NULL);
-	ht->minute_body = lv_line_create(parent, NULL);
-	ht->second_body = lv_line_create(parent, NULL);
+	ht->hour_body = lv_line_create(parent);
+	ht->minute_body = lv_line_create(parent);
+	ht->second_body = lv_line_create(parent);
 
-	lv_obj_add_style(ht->hour_body, LV_LINE_PART_MAIN, &ht->hour_line_style);
-	lv_obj_add_style(ht->minute_body, LV_LINE_PART_MAIN, &ht->minute_line_style);
-	lv_obj_add_style(ht->second_body, LV_LINE_PART_MAIN, &ht->second_line_style);
+	//lv_obj_add_style(ht->hour_body, &ht->hour_line_style);
+	//lv_obj_add_style(ht->minute_body, &ht->minute_line_style);
+	//lv_obj_add_style(ht->second_body, &ht->second_line_style);
 	for(int i = 0; i < ARRAY_SIZE(gua_lines); i++) {
-		lv_obj_t *line = lv_line_create(parent, NULL);
+		lv_obj_t *line = lv_line_create(parent);
 
-		lv_obj_add_style(line, LV_LINE_PART_MAIN, &ht->style_line);
+		//lv_obj_add_style(line, &ht->style_line);
 		lv_line_set_points(line, (lv_point_t *)&gua_lines[i], 2);
 	}
 	return scr;
@@ -136,9 +136,9 @@ static void update_clock(clock_app_t *ht, struct tm *time)
 	lv_line_set_points(ht->second_body, ht->second_point, 2);
 }
 
-static void clock_update_task(lv_task_t *task)
+static void clock_update_timer(lv_timer_t *timer)
 {
-	app_t *app = task->user_data;
+	app_t *app = timer->user_data;
 	clock_app_t *htapp = _from_app(app);
 
 	time_t now = (time_t)k_uptime_get() / 1000;
@@ -152,7 +152,7 @@ static int clock_init(app_t *app, lv_obj_t *parent)
 	clock_app_t *htapp = _from_app(app);
 	htapp->screen = screen_clock_create(htapp, parent);
 
-	htapp->lv_task_clock = lv_task_create(clock_update_task, 500, LV_TASK_PRIO_MID, app);
+	htapp->lv_timer_clock = lv_timer_create(clock_update_timer, 500, app);
 
 	return 0;
 }
@@ -169,7 +169,7 @@ static int clock_exit(app_t *app)
 	lv_obj_clean(ht->screen);
 	lv_obj_del(ht->screen);
 	ht->screen = NULL;
-	lv_task_del(ht->lv_task_clock);
+	lv_obj_del_async(ht->lv_timer_clock);
 
 	return 0;
 }
