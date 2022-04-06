@@ -21,7 +21,7 @@ LOG_MODULE_DECLARE(BMA421, CONFIG_SENSOR_LOG_LEVEL);
 static void bma421_gpio_callback(const struct device *dev,
 				 struct gpio_callback *cb, uint32_t pins)
 {
-	struct bma421_data *drv_data = dev->data;
+	struct bma421_data *drv_data = CONTAINER_OF(cb, struct bma421_data, gpio_cb);;
 
 	ARG_UNUSED(pins);
 
@@ -96,7 +96,7 @@ int bma421_trigger_set(const struct device *dev,
 
 	switch (trig->type) {
 	case SENSOR_TRIG_DATA_READY:
-		interrupt_mask = BMA4_DATA_RDY_INT;
+		interrupt_mask = BMA4_ACCEL_DATA_RDY_INT;
 		drv_data->data_ready_handler = handler;
 		drv_data->data_ready_trigger = *trig;
 		break;
@@ -111,6 +111,12 @@ int bma421_trigger_set(const struct device *dev,
 	ret = bma421_map_interrupt(BMA4_INTR1_MAP, interrupt_mask, interrupt_enable, bma_dev);
 	if (ret) {
 		LOG_ERR("Map interrupt failed err %d", ret);
+		return ret;
+	}
+
+	ret = bma4_set_interrupt_mode(BMA4_LATCH_MODE, bma_dev);
+	if (ret) {
+		LOG_ERR("bma4_set_interrupt_mode error: %d", ret);
 		return ret;
 	}
 
@@ -164,16 +170,13 @@ int bma421_init_interrupt(const struct device *dev)
 	pin_config.od = BMA4_OPEN_DRAIN;
 	pin_config.lvl = BMA4_ACTIVE_LOW;
 	pin_config.edge_ctrl = BMA4_EDGE_TRIGGER;
-	/* .edge_ctrl and .input_en are for input interrupt configuration */
+	pin_config.input_en = BMA4_INPUT_DISABLE;
 
 	ret = bma4_set_int_pin_config(&pin_config, BMA4_INTR1_MAP, bma_dev);
 	if (ret) {
 		LOG_ERR("Set interrupt config err %d", ret);
 		return ret;
 	}
-
-	/* Latch mode means that interrupt flag are only reset once the status is read */
-	bma4_set_interrupt_mode(BMA4_LATCH_MODE, bma_dev);
 
 	uint8_t bma_status = 0xffu;
 	bma4_get_status(&bma_status, bma_dev);
