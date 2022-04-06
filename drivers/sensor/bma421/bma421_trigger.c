@@ -47,6 +47,11 @@ static void bma421_thread_cb(const struct device *dev)
 		drv_data->data_ready_handler(dev, &drv_data->data_ready_trigger);
 	}
 
+	if (((int_status & BMA421_STEP_CNTR_INT) == BMA421_STEP_CNTR_INT)
+		&& drv_data->data_ready_handler != NULL) {
+		drv_data->step_counter_handler(dev, &drv_data->step_counter_trigger);
+	}
+
 	/* check for any error */
 	if (((int_status & BMA421_ERROR_INT) == BMA421_ERROR_INT)) {
 		LOG_ERR("Interrupt status 0x%x - Error detected!", int_status);
@@ -100,6 +105,13 @@ int bma421_trigger_set(const struct device *dev,
 		drv_data->data_ready_handler = handler;
 		drv_data->data_ready_trigger = *trig;
 		break;
+
+	case BMA421_TRIG_STEP_COUNTER:
+		interrupt_mask = BMA421_STEP_CNTR_INT;
+		drv_data->step_counter_handler = handler;
+		drv_data->step_counter_trigger = *trig;
+		break;
+
 	default:
 		LOG_ERR("Unsupported sensor trigger");
 		return -ENOTSUP;

@@ -14,6 +14,9 @@
 
 #include "bma4_defs.h"
 
+#define BMA421_TRIG_STEP_COUNTER          (SENSOR_TRIG_PRIV_START + 1)
+
+#define SENSOR_CHAN_STEP      (SENSOR_CHAN_PRIV_START + 1)
 
 #if CONFIG_BMA421_ACC_ODR_1
 #define BMA421_ACC_ODR		0x01
@@ -65,6 +68,7 @@
 struct bma421_data {
 	struct bma4_accel accel;
 	int32_t temperature;
+	uint32_t steps;
 	struct bma4_dev bma_dev;
 #ifdef CONFIG_BMA421_TRIGGER
 	const struct device *gpio;
@@ -72,6 +76,9 @@ struct bma421_data {
 
 	struct sensor_trigger data_ready_trigger;
 	sensor_trigger_handler_t data_ready_handler;
+
+	struct sensor_trigger step_counter_trigger;
+	sensor_trigger_handler_t step_counter_handler;
 
 	struct sensor_trigger any_motion_trigger;
 	sensor_trigger_handler_t any_motion_handler;

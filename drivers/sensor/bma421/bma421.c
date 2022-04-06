@@ -73,17 +73,14 @@ static int bma421_sample_fetch(const struct device *dev, enum sensor_channel cha
 		retval = bma4_get_temperature(&drv_data->temperature, BMA4_DEG, bma_dev);
 		break;
 
+	case SENSOR_CHAN_STEP:
+		retval = bma421_step_counter_output(drv_data->steps, bma_dev);
+		break;
+
 	case SENSOR_CHAN_ALL:
 		retval = bma4_read_accel_xyz(&drv_data->accel, bma_dev);
 		retval |= bma4_get_temperature(&drv_data->temperature, BMA4_DEG, bma_dev);
- //uint32_t steps = 0;
-// bma4_step_counter_output(&steps, &bma);
-  //int32_t temperature;
-  //bma4_get_temperature(&temperature, BMA4_DEG, &bma);
-  //temperature = temperature / 1000;
-
-  //uint8_t activity = 0;
-  //bma423_activity_output(&activity, &bma);
+		retval |= bma421_step_counter_output(drv_data->steps, bma_dev);
 		if (retval < 0) {
 			LOG_ERR("bma4_read_accel_xyz error: %d", retval);
 			return retval;
@@ -133,6 +130,8 @@ static int bma421_channel_get(const struct device *dev,
 		val->val1 = (drv_data->temperature >> 1) + 23;
 		val->val2 = 500000 * (drv_data->temperature & 1);
 		return 0;
+	} else if (chan == SENSOR_CHAN_STEP) {
+		val->val1 = drv_data->steps;
 	} else {
 		return -ENOTSUP;
 	}
