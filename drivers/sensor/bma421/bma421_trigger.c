@@ -21,7 +21,7 @@ LOG_MODULE_DECLARE(BMA421, CONFIG_SENSOR_LOG_LEVEL);
 static void bma421_gpio_callback(const struct device *dev,
 				 struct gpio_callback *cb, uint32_t pins)
 {
-	struct bma421_data *drv_data = CONTAINER_OF(cb, struct bma421_data, gpio_cb);;
+	struct bma421_data *drv_data = CONTAINER_OF(cb, struct bma421_data, gpio_cb);
 
 	ARG_UNUSED(pins);
 
@@ -39,7 +39,7 @@ static void bma421_thread_cb(const struct device *dev)
 
 	uint16_t int_status = 0xffffu;
 	bma421_read_int_status(&int_status, bma_dev);
-LOG_INF("int status:0x%x", int_status);
+	LOG_DBG("int status:0x%x", int_status);
 
 	/* check for data ready */
 	if (((int_status & BMA4_ACCEL_DATA_RDY_INT) == BMA4_ACCEL_DATA_RDY_INT)
@@ -96,7 +96,7 @@ int bma421_trigger_set(const struct device *dev,
 
 	switch (trig->type) {
 	case SENSOR_TRIG_DATA_READY:
-		interrupt_mask = BMA4_ACCEL_DATA_RDY_INT;
+		interrupt_mask = BMA4_ACCEL_DATA_RDY_INT | BMA4_DATA_RDY_INT;
 		drv_data->data_ready_handler = handler;
 		drv_data->data_ready_trigger = *trig;
 		break;
@@ -167,7 +167,7 @@ int bma421_init_interrupt(const struct device *dev)
 	bma4_get_int_pin_config(&pin_config, BMA4_INTR1_MAP, bma_dev);
 
 	pin_config.output_en = BMA4_OUTPUT_ENABLE;
-	pin_config.od = BMA4_OPEN_DRAIN;
+	pin_config.od = BMA4_PUSH_PULL;
 	pin_config.lvl = BMA4_ACTIVE_LOW;
 	pin_config.edge_ctrl = BMA4_EDGE_TRIGGER;
 	pin_config.input_en = BMA4_INPUT_DISABLE;
