@@ -48,7 +48,7 @@ static void bma421_thread_cb(const struct device *dev)
 	}
 
 	if (((int_status & BMA421_STEP_CNTR_INT) == BMA421_STEP_CNTR_INT)
-		&& drv_data->data_ready_handler != NULL) {
+		&& drv_data->step_counter_handler != NULL) {
 		drv_data->step_counter_handler(dev, &drv_data->step_counter_trigger);
 	}
 
