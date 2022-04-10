@@ -55,7 +55,7 @@ struct gua gua_lines[] = {
 	},
 };
 
- static int16_t Cosine(int16_t angle)
+static int16_t Cosine(int16_t angle)
 {
 	return lv_trigo_sin(angle + 90);
 }
@@ -69,6 +69,7 @@ static int16_t coordinate_x_relocate(int16_t x)
 {
 	return (x + LV_HOR_RES / 2);
 }
+
 static int16_t coordinate_y_relocate(int16_t y)
 {
 	return abs(y - LV_VER_RES / 2);
@@ -140,8 +141,11 @@ static void clock_update_timer(lv_timer_t *timer)
 {
 	app_t *app = timer->user_data;
 	clock_app_t *htapp = _from_app(app);
+	struct timespec real_time;
 
-	time_t now = (time_t)k_uptime_get() / 1000;
+	clock_gettime(CLOCK_REALTIME, &real_time);
+	time_t now = real_time.tv_sec;
+
 	struct tm *ptm = localtime(&now);
 
 	update_clock(htapp, ptm);
@@ -169,7 +173,7 @@ static int clock_exit(app_t *app)
 	lv_obj_clean(ht->screen);
 	lv_obj_del(ht->screen);
 	ht->screen = NULL;
-	lv_obj_del_async(ht->lv_timer_clock);
+	lv_timer_del(ht->lv_timer_clock);
 
 	return 0;
 }

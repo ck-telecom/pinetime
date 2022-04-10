@@ -12,6 +12,11 @@ typedef enum EventServiceCommand {
     EventServiceCommandBluetoothPairRequest,
 } EventServiceCommand;
 
+struct event {
+	uint32_t event_id;
+	void *data;
+};
+
 typedef void (*event_service_callback_t)(uint32_t command, void *data, void *context);
 
 void event_service_subscribe(uint32_t command, event_service_callback_t callback);

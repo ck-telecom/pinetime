@@ -10,16 +10,13 @@
 #include <settings/settings.h>
 
 #include "bluetooth/gatt_dm.h"
-
-#include "bluetooth/services/cts_client.h"
-#include "bluetooth/services/ams_client.h"
-#include "bluetooth/services/ancs_client.h"
+#include "bt.h"
 
 #include <time.h>
 
 //#define LOG_LEVEL LOG_LEVEL_DBG
 LOG_MODULE_REGISTER(BT_APP, LOG_LEVEL_INF);
-
+/*
 static struct bt_cts_client cts_c;
 static bool has_cts;
 
@@ -28,7 +25,7 @@ static bool has_ams;
 
 struct bt_ancs_client ancs_c;
 static bool has_ancs;
-
+*/
 static void connected(struct bt_conn *conn, uint8_t err);
 static void disconnected(struct bt_conn *conn, uint8_t reason);
 static bool le_param_req(struct bt_conn *conn, struct bt_le_conn_param *param);
@@ -69,13 +66,12 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
 };
 
 void bt_cts_read_callback(struct bt_cts_client *cts_c,
-		    struct bt_cts_current_time *current_time,
-		    int err)
+			  struct bt_cts_current_time *current_time,
+			  int err)
 {
-	/* convert to unix timestamp */
-	if (err != 0) {
+	if (err == 0) {
 		struct tm now;
-
+		struct timespec time;
 		now.tm_year = current_time->exact_time_256.year - 1900;
 		now.tm_mon = current_time->exact_time_256.month - 1;
 		now.tm_mday = current_time->exact_time_256.day;
@@ -83,7 +79,10 @@ void bt_cts_read_callback(struct bt_cts_client *cts_c,
 		now.tm_min = current_time->exact_time_256.minutes;
 		now.tm_sec = current_time->exact_time_256.seconds;
 
-		mktime(&now);
+		time.tv_sec = mktime(&now);
+		time.tv_nsec = 0;
+
+		clock_settime(CLOCK_REALTIME, &time);
 	}
 }
 
@@ -143,6 +142,7 @@ static void discover_all_completed(struct bt_gatt_dm *dm, void *ctx)
 {
 	int err;
 	char uuid_str[37];
+	struct bt_gatt_context *context = ctx;
 
 	const struct bt_gatt_dm_attr *gatt_service_attr =
 			bt_gatt_dm_service_get(dm);
@@ -156,19 +156,19 @@ static void discover_all_completed(struct bt_gatt_dm *dm, void *ctx)
 	//printk("Attribute count: %d\n", attr_count);
 
 	if (!bt_uuid_cmp(gatt_service->uuid, BT_UUID_CTS)) {
-		err = bt_cts_handles_assign(dm, &cts_c);
+		err = bt_cts_handles_assign(dm, &context->cts_c);
 		if (err == 0) {
-			has_cts = true;
+			context->has_cts = true;
 		}
 	} else if (!bt_uuid_cmp(gatt_service->uuid, BT_UUID_AMS)) {
-		err = bt_ams_handles_assign(dm, &ams_c);
+		err = bt_ams_handles_assign(dm, &context->ams_c);
 		if (err == 0) {
-			has_ams = true;
+			context->has_ams = true;
 		}
 	} else if (!bt_uuid_cmp(gatt_service->uuid, BT_UUID_ANCS)) {
-		err = bt_ancs_handles_assign(dm, &ancs_c);
+		err = bt_ancs_handles_assign(dm, &context->ancs_c);
 		if (err == 0) {
-			has_ancs = true;
+			context->has_ancs = true;
 		}
 	}
 
@@ -183,6 +183,10 @@ static void discover_all_completed(struct bt_gatt_dm *dm, void *ctx)
 static void discover_all_service_not_found(struct bt_conn *conn, void *ctx)
 {
 	printk("No more services\n");
+	struct bt_gatt_context *context = ctx;
+	if (context->has_cts) {
+		bt_cts_read_current_time(&context->cts_c, bt_cts_read_callback);
+	}
 }
 
 static void discover_all_error_found(struct bt_conn *conn, int err, void *ctx)
@@ -235,6 +239,9 @@ static struct bt_conn_auth_cb auth_cb_display = {
 	.passkey_display = auth_passkey_display,
 	.passkey_entry = NULL,
 	.cancel = auth_cancel,
+};
+
+struct bt_conn_auth_info_cb auth_info = {
 	.pairing_complete = auth_pairing_complete,
 };
 
@@ -293,6 +300,11 @@ int app_bt_init(void)
 	err = bt_conn_auth_cb_register(&auth_cb_display);
 	if (err) {
 		LOG_ERR("bt_conn_auth_cb_register error");
+	}
+
+	err = bt_conn_auth_info_cb_register(&auth_info);
+	if (err) {
+		LOG_ERR("bt_conn_auth_info_cb_register error");
 	}
 
 	k_work_init(&advertise_work, advertise);
