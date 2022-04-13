@@ -37,3 +37,17 @@
 &adc {
 	status = "okay";
 };
+
+&xt25fb32 {
+        partitions {
+                compatible = "fixed-partitions";
+                #address-cells = <1>;
+                #size-cells = <1>;
+
+                /* rdb in last 1MB */
+                rdb_partition: partition@300000 {
+                        label = "rdb";
+                        reg = <0x00300000 0x100000>;
+                };
+	};
+};
