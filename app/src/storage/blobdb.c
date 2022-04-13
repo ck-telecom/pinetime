@@ -12,14 +12,13 @@
 #include "timeline.h"
 #include "rdb.h"
 
+#include <logging/log.h>
+
 #include <storage/flash_map.h>
 #include <fs/fs.h>
 #include <fs/littlefs.h>
 
-/* Configure Logging */
-#define MODULE_NAME "rdb"
-#define MODULE_TYPE "SYS"
-#define LOG_LEVEL RBL_LOG_LEVEL_DEBUG //RBL_LOG_LEVEL_ERROR
+LOG_MODULE_REGISTER(rdb, CONFIG_LOG_DEFAULT_LEVEL);
 
 /* RDBs have a few states for an entry:
  *
@@ -196,7 +195,7 @@ int rdb_iter_start(const struct rdb_database *db, struct rdb_iter *it)
     assert(db->locked);
 
     if (fs_find_file(&file, db->filename) < 0) {
-        LOG_ERROR("file not found for db %s", db->filename);
+        LOG_ERR("file not found for db %s", db->filename);
         return 0;
     }
     fs_open(&fd, &file);
@@ -361,7 +360,7 @@ int rdb_select(struct rdb_iter *it, list_head/*<rdb_select_result>*/ *head, stru
                 if (!r)
                     break;
                 if (rdb_iter_read_data(it, 0, r, it->data_len) != it->data_len) {
-                    LOG_ERROR("short read in fully load");
+                    LOG_ERR("short read in fully load");
                     free(r);
                     break;
                 }
@@ -420,10 +419,10 @@ int _rdb_gc_for_bytes(const struct rdb_database *db, struct fd *fd, int bytes)
         used += sizeof(struct rdb_hdr) + it.key_len + it.data_len;
     int tlen = fs_seek(&it.fd, 0, FS_SEEK_CUR);
     int fsz = fs_size(fd);
-    LOG_INFO("gc: rdb %s will have %d/%d bytes used after, has %d/%d bytes used", db->filename, used, fsz, tlen, fsz);
+    LOG_INF("gc: rdb %s will have %d/%d bytes used after, has %d/%d bytes used", db->filename, used, fsz, tlen, fsz);
 
     if (bytes >= (fsz - used)) {
-        LOG_ERROR("gc: which is not enough space for a %d byte entry, sadly", bytes);
+        LOG_ERR("gc: which is not enough space for a %d byte entry, sadly", bytes);
         return 0;
     }
 
@@ -431,7 +430,7 @@ int _rdb_gc_for_bytes(const struct rdb_database *db, struct fd *fd, int bytes)
     valid = _rdb_iter_start_from_fd(fd, &it);
     struct file oldfile = fd->file;
     if (fs_creat_replacing(fd, db->filename, db->def_db_size, &oldfile) == NULL) {
-        LOG_ERROR("gc: failed to create new file");
+        LOG_ERR("gc: failed to create new file");
         return 0;
     }
     for (; valid; valid = rdb_iter_next(&it)) {
@@ -442,11 +441,11 @@ int _rdb_gc_for_bytes(const struct rdb_database *db, struct fd *fd, int bytes)
             size_t ibytes = nbytes < 16 ? nbytes : 16;
 
             if (fs_read(&from, buf, ibytes) != ibytes) {
-                LOG_ERROR("gc: failed to read");
+                LOG_ERR("gc: failed to read");
                 return 0;
             }
             if (fs_write(fd, buf, ibytes) != ibytes) {
-                LOG_ERROR("gc: failed to write");
+                LOG_ERR("gc: failed to write");
                 return 0;
             }
 
@@ -463,9 +462,9 @@ int rdb_create(const struct rdb_database *db)
     struct file file;
     if (fs_find_file(&file, db->filename) < 0) {
         struct fd fd;
-        LOG_ERROR("rdb %s does not exist, so I'm going to go create it, wish me luck", db->filename);
+        LOG_ERR("rdb %s does not exist, so I'm going to go create it, wish me luck", db->filename);
         if (fs_creat(&fd, db->filename, db->def_db_size) == NULL) {
-            LOG_ERROR("nope, that did not work either, I give up");
+            LOG_ERR("nope, that did not work either, I give up");
             return Blob_DatabaseFull;
         }
         fs_mark_written(&fd);
@@ -491,7 +490,7 @@ int rdb_insert(const struct rdb_database *db, const uint8_t *key, uint16_t key_s
 
         uint8_t rdkey[key_size];
         if (rdb_iter_read_key(&it, rdkey) < key_size) {
-            LOG_ERROR("short read on disk in key read");
+            LOG_ERR("short read on disk in key read");
             return Blob_GeneralFailure;
         }
 
@@ -500,7 +499,7 @@ int rdb_insert(const struct rdb_database *db, const uint8_t *key, uint16_t key_s
          * Special care needed if there are multiple interrupted overwrites.
          */
         if (memcmp(key, rdkey, key_size) == 0) {
-            LOG_ERROR("rdb overwrite not supported");
+            LOG_ERR("rdb overwrite not supported");
             return Blob_InvalidData;
         }
     }
@@ -508,7 +507,7 @@ int rdb_insert(const struct rdb_database *db, const uint8_t *key, uint16_t key_s
     int pos = fs_seek(&it.fd, 0, FS_SEEK_CUR);
     if (pos + sizeof(struct rdb_hdr) + key_size + data_size > it.fd.file.size) {
         if (!_rdb_gc_for_bytes(db, &it.fd, sizeof(struct rdb_hdr) + key_size + data_size)) {
-            LOG_ERROR("not enough space %d %d for new entry", it.fd.file.size, pos); //+ sizeof(struct rdb_hdr) + key_size + data_size);
+            LOG_ERR("not enough space %d %d for new entry", it.fd.file.size, pos); //+ sizeof(struct rdb_hdr) + key_size + data_size);
             return Blob_DatabaseFull;
         }
     }
@@ -521,7 +520,7 @@ int rdb_insert(const struct rdb_database *db, const uint8_t *key, uint16_t key_s
     hdr.key_len = key_size;
     hdr.data_len = data_size;
     if (fs_write(&hfd, &hdr, sizeof(hdr)) < sizeof(hdr)) {
-        LOG_ERROR("failed to write header");
+        LOG_ERR("failed to write header");
         return Blob_GeneralFailure;
     }
 
@@ -529,17 +528,17 @@ int rdb_insert(const struct rdb_database *db, const uint8_t *key, uint16_t key_s
     hdr.flags &= ~RDB_FLAG_HEADER_WRITTEN;
     hfd = it.fd;
     if (fs_write(&hfd, &hdr, sizeof(hdr)) < sizeof(hdr)) {
-        LOG_ERROR("failed to write header");
+        LOG_ERR("failed to write header");
         return Blob_GeneralFailure;
     }
 
     /* Write the data. */
     if (fs_write(&hfd, key, key_size) < key_size) {
-        LOG_ERROR("failed to write key");
+        LOG_ERR("failed to write key");
         return Blob_GeneralFailure;
     }
     if (fs_write(&hfd, data, data_size) < data_size) {
-        LOG_ERROR("failed to write data");
+        LOG_ERR("failed to write data");
         return Blob_GeneralFailure;
     }
 
@@ -547,7 +546,7 @@ int rdb_insert(const struct rdb_database *db, const uint8_t *key, uint16_t key_s
     hfd = it.fd;
     hdr.flags &= ~RDB_FLAG_WRITTEN;
     if (fs_write(&hfd, &hdr, sizeof(hdr)) < sizeof(hdr)) {
-        LOG_ERROR("failed to update header");
+        LOG_ERR("failed to update header");
         return Blob_GeneralFailure;
     }
 
@@ -580,7 +579,7 @@ int rdb_update(const struct rdb_database *db, const uint8_t *key, const uint16_t
         if (!rdb_delete(&res->it) ||
             !rdb_insert(db, key, res->it.key_len, data, data_size)) {
             rdb_select_free_all(&head);
-            LOG_ERROR("update: failed to create value");
+            LOG_ERR("update: failed to create value");
             return Blob_GeneralFailure;
         }
     }
@@ -618,8 +617,12 @@ struct fs_mount_t *mp = &lfs_storage_mnt;
 
 static void rdb_init(const struct device *dev)
 {
+    int r = 0;
     ARG_UNUSED(dev);
 
-    fs_mount(mp);
+    r = fs_mount(mp);
+    if (r) {
+        LOG_ERR("failed to init rdb: %d", r);
+    }
 }
 SYS_INIT(rdb_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
