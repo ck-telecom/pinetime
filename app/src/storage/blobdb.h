@@ -40,6 +40,7 @@ enum {
     RDB_ID_APP_GLANCE = 11,
     RDB_ID_APP_PERSIST = 16,
     RDB_ID_BLUETOOTH = 128,
+    RDB_ID_HEALTH = 129,
 };
 
 struct rdb_database;
@@ -92,3 +93,4 @@ void rdb_select_free_all(rdb_select_result_list *head);
 #define rdb_select_result_next(res, lh) list_elem(list_get_next(lh, &(res)->node), struct rdb_select_result, node)
 #define rdb_select_result_prev(res, lh) list_elem(list_get_prev(lh, &(res)->node), struct rdb_select_result, node)
 
+#endif /* _BLOBDB_H */

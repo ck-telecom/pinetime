@@ -12,6 +12,10 @@
 #include "timeline.h"
 #include "rdb.h"
 
+#include <storage/flash_map.h>
+#include <fs/fs.h>
+#include <fs/littlefs.h>
+
 /* Configure Logging */
 #define MODULE_NAME "rdb"
 #define MODULE_TYPE "SYS"
@@ -80,7 +84,12 @@ static struct rdb_database databases[] = {
     {
         .id = RDB_ID_BLUETOOTH,
         .filename = "rebble/bluetooth",
-        .def_db_size = 8192
+        .def_db_size = 8192,
+    },
+    {
+        .id = RDB_ID_HEALTH,
+        .filename = "/lfs/health",
+        .def_db_size = 8192,
     }
 };
 
@@ -595,3 +604,22 @@ int rdb_delete(struct rdb_iter *it)
 
     return Blob_Success;
 }
+
+FS_LITTLEFS_DECLARE_DEFAULT_CONFIG(rdb);
+
+static struct fs_mount_t lfs_storage_mnt = {
+    .type = FS_LITTLEFS,
+    .fs_data = &rdb,
+    .storage_dev = (void *)FLASH_AREA_ID(rdb),
+    .mnt_point = "/lfs",
+};
+
+struct fs_mount_t *mp = &lfs_storage_mnt;
+
+static void rdb_init(const struct device *dev)
+{
+    ARG_UNUSED(dev);
+
+    fs_mount(mp);
+}
+SYS_INIT(rdb_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
