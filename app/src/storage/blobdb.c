@@ -203,7 +203,8 @@ int rdb_iter_start(const struct rdb_database *db, struct rdb_iter *it)
     return _rdb_iter_start_from_fd(&fd, it);
 }
 
-int rdb_iter_next(struct rdb_iter *it) {
+int rdb_iter_next(struct rdb_iter *it)
+{
     it->key_len = it->data_len = 0;
 
     struct rdb_hdr hdr;
@@ -216,14 +217,16 @@ int rdb_iter_next(struct rdb_iter *it) {
     return 1;
 }
 
-int rdb_iter_read_key(struct rdb_iter *it, void *key) {
+int rdb_iter_read_key(struct rdb_iter *it, void *key)
+{
     struct fd fd = it->fd;
 
     fs_seek(&fd, sizeof(struct rdb_hdr), FS_SEEK_CUR);
     return fs_read(&fd, key, it->key_len);
 }
 
-int rdb_iter_read_data(struct rdb_iter *it, int ofs, void *data, int len) {
+int rdb_iter_read_data(struct rdb_iter *it, int ofs, void *data, int len)
+{
     struct fd fd = it->fd;
 
     if (it->data_len <= ofs)
