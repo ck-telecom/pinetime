@@ -19,6 +19,12 @@ manifest:
       revision: 1f9145e8c8359f103b4ac5085c6f5d2e66a2557d
       path: modules/hal/nordic
 
+    - name: littlefs
+      path: modules/fs/littlefs
+      groups:
+        - fs
+      revision: 7b2cf4ba759bd530b543644e2790b07cf20cd6aa
+
     - name: lvgl
       revision: a2e17073e5208c221e24e3c2b3b6c473e878bd1e
       path: modules/lib/gui/lvgl
