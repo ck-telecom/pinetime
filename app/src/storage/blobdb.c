@@ -57,6 +57,7 @@ struct rdb_database {
     const char *filename;
     uint16_t def_db_size;
     int locked;
+    struct fs_file_t fd;
 //    SemaphoreHandle_t mutex;
 //    StaticSemaphore_t mutex_buf;
 };
@@ -96,6 +97,9 @@ static struct rdb_database databases[] = {
 
 struct rdb_database *rdb_open(uint16_t database_id)
 {
+    struct fs_file_t fd;
+    int r = 0;
+
     for (int i = 0; i < sizeof(databases) / sizeof(databases[0]); i++)
     {
         if (databases[i].id == database_id) {
@@ -106,6 +110,13 @@ struct rdb_database *rdb_open(uint16_t database_id)
 //            taskEXIT_CRITICAL();
 
 //            xSemaphoreTake(databases[i].mutex, portMAX_DELAY);
+            fs_file_t_init(&fd);
+            r = fs_open(&fd, databases[i].filename, FS_O_CREATE | FS_O_RDWR);
+            if (r) {
+                LOG_ERR("open file: %s error", databases[i].filename);
+                return NULL;
+            }
+            databases[i].fd = fd;
             databases[i].locked = 1;
             return &databases[i];
         }
@@ -118,6 +129,7 @@ void rdb_close(struct rdb_database *db)
 {
     assert(db->locked);
     db->locked = 0;
+    fs_close(&db->fd);
 //    xSemaphoreGive(db->mutex);
 }
 
@@ -190,23 +202,11 @@ static int _rdb_iter_start_from_fd(struct fs_file_t *fd, struct rdb_iter *it)
 
 int rdb_iter_start(const struct rdb_database *db, struct rdb_iter *it)
 {
-    struct fs_file_t fd;
-    int r = 0;
-
     assert(db->locked);
-/*
-    if (fs_find_file(&file, db->filename) < 0) {
-        LOG_ERR("file not found for db %s", db->filename);
-        return 0;
-    }
-*/
-    r = fs_open(&fd, db->filename, FS_O_CREATE | FS_O_RDWR);
-    if (r) {
-        LOG_ERR("open file: %s error", db->filename);
-	return r;
-    }
 
-    return _rdb_iter_start_from_fd(&fd, it);
+    struct fs_file_t *fd = &db->fd;
+
+    return _rdb_iter_start_from_fd(fd, it);
 }
 
 int rdb_iter_next(struct rdb_iter *it)
@@ -461,7 +461,7 @@ int _rdb_gc_for_bytes(const struct rdb_database *db, struct fs_file_t *fd, int b
         }
     }
     fs_mark_written(fd); /* oldfile is now dead */
-
+#endif
     return 1;
 }
 
@@ -470,13 +470,14 @@ int rdb_create(const struct rdb_database *db)
     if (fs_stat(db->filename, NULL) < 0) {
         struct fs_file_t fd;
         LOG_ERR("rdb %s does not exist, so I'm going to go create it, wish me luck", db->filename);
+	fs_file_t_init(&fd);
         if (fs_open(&fd, db->filename, FS_O_CREATE) < 0) {
             LOG_ERR("nope, that did not work either, I give up");
             return Blob_DatabaseFull;
         }
         fs_close(&fd);
     }
-#endif
+
     return Blob_Success;
 }
 
