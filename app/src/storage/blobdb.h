@@ -1,6 +1,10 @@
 #ifndef _BLOBDB_H
 #define _BLOBDB_H
 
+#include <zephyr.h>
+
+#include <fs/fs.h>
+
 enum {
     Blob_Insert = 0x01,
     Blob_Delete = 0x04,
@@ -46,7 +50,7 @@ enum {
 struct rdb_database;
 
 struct rdb_iter {
-    struct fd fd;
+    struct fs_file_t fd;
     uint8_t key_len;
     uint16_t data_len;
 };
@@ -61,14 +65,14 @@ struct rdb_selector {
 };
 
 struct rdb_select_result {
-    list_node node;
+    sys_dnode_t node;
     struct rdb_iter it; /* pointer to data */
     void *key;
     int nres;
     void *result[];
 };
 
-typedef list_head rdb_select_result_list;
+typedef sys_dlist_t rdb_select_result_list;
 
 struct rdb_database *rdb_open(uint16_t database_id);
 void rdb_close(struct rdb_database *db);
@@ -88,9 +92,9 @@ int rdb_select(struct rdb_iter *it, rdb_select_result_list *head, struct rdb_sel
 void rdb_select_free_result(struct rdb_select_result *res);
 void rdb_select_free_all(rdb_select_result_list *head);
 
-#define rdb_select_result_foreach(res, lh) list_foreach(res, lh, struct rdb_select_result, node)
-#define rdb_select_result_head(lh) list_elem(list_get_head(lh), struct rdb_select_result, node)
-#define rdb_select_result_next(res, lh) list_elem(list_get_next(lh, &(res)->node), struct rdb_select_result, node)
-#define rdb_select_result_prev(res, lh) list_elem(list_get_prev(lh, &(res)->node), struct rdb_select_result, node)
+#define rdb_select_result_foreach(res, lh) SYS_DLIST_FOR_EACH_CONTAINER(lh, res, node)
+#define rdb_select_result_head(lh) SYS_DLIST_CONTAINER(sys_dlist_peek_head(lh), struct rdb_select_result, node)
+#define rdb_select_result_next(res, lh) SYS_DLIST_CONTAINER(sys_dlist_peek_next(lh, &(res)->node), res, node)
+#define rdb_select_result_prev(res, lh) SYS_DLIST_CONTAINER(sys_dlist_peek_prev(lh, &(res)->node), res, node)
 
 #endif /* _BLOBDB_H */

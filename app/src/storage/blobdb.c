@@ -5,18 +5,20 @@
  * Authors: Barry Carter <barry.carter@gmail.com>
  *          Joshua Wise <joshua@joshuawise.com>
  */
-#include "rebbleos.h"
-#include "protocol_system.h"
-#include "pebble_protocol.h"
-#include "node_list.h"
-#include "timeline.h"
-#include "rdb.h"
-
+//#include "rebbleos.h"
+//#include "protocol_system.h"
+//#include "pebble_protocol.h"
+//#include "node_list.h"
+//#include "timeline.h"
+#include <init.h>
+#include <sys/dlist.h>
 #include <logging/log.h>
 
 #include <storage/flash_map.h>
-#include <fs/fs.h>
+
 #include <fs/littlefs.h>
+
+#include "blobdb.h"
 
 LOG_MODULE_REGISTER(rdb, CONFIG_LOG_DEFAULT_LEVEL);
 
@@ -55,8 +57,8 @@ struct rdb_database {
     const char *filename;
     uint16_t def_db_size;
     int locked;
-    SemaphoreHandle_t mutex;
-    StaticSemaphore_t mutex_buf;
+//    SemaphoreHandle_t mutex;
+//    StaticSemaphore_t mutex_buf;
 };
 
 static struct rdb_database databases[] = {
@@ -98,12 +100,12 @@ struct rdb_database *rdb_open(uint16_t database_id)
     {
         if (databases[i].id == database_id) {
             /* Avoid race on mutex setup. */
-            taskENTER_CRITICAL();
-            if (!databases[i].mutex)
-                databases[i].mutex = xSemaphoreCreateMutexStatic(&databases[i].mutex_buf);
-            taskEXIT_CRITICAL();
+//            taskENTER_CRITICAL();
+//            if (!databases[i].mutex)
+//                databases[i].mutex = xSemaphoreCreateMutexStatic(&databases[i].mutex_buf);
+//            taskEXIT_CRITICAL();
 
-            xSemaphoreTake(databases[i].mutex, portMAX_DELAY);
+//            xSemaphoreTake(databases[i].mutex, portMAX_DELAY);
             databases[i].locked = 1;
             return &databases[i];
         }
@@ -116,7 +118,7 @@ void rdb_close(struct rdb_database *db)
 {
     assert(db->locked);
     db->locked = 0;
-    xSemaphoreGive(db->mutex);
+//    xSemaphoreGive(db->mutex);
 }
 
 /* Positions the fd to the next valid header.  If no remaining valid headers
@@ -127,10 +129,10 @@ void rdb_close(struct rdb_database *db)
  * Returns 1 if the fd points to a valid header, or 0 if it points to free
  * space (or has insufficient space left in the file for another header).
  */
-static int _rdb_seek_valid(struct fd *fdp, struct rdb_hdr *hdrp, int next)
+static int _rdb_seek_valid(struct fs_file_t *fdp, struct rdb_hdr *hdrp, int next)
 {
     /* We work on a copy of the fd, because rewinding is expensive. */
-    struct fd fd;
+    struct fs_file_t fd;
     struct rdb_hdr hdr;
 
     memcpy(&fd, fdp, sizeof(fd));
@@ -170,7 +172,7 @@ static int _rdb_seek_valid(struct fd *fdp, struct rdb_hdr *hdrp, int next)
     return 0;
 }
 
-static int _rdb_iter_start_from_fd(struct fd *fd, struct rdb_iter *it)
+static int _rdb_iter_start_from_fd(struct fs_file_t *fd, struct rdb_iter *it)
 {
     it->fd = *fd;
 
@@ -188,17 +190,21 @@ static int _rdb_iter_start_from_fd(struct fd *fd, struct rdb_iter *it)
 
 int rdb_iter_start(const struct rdb_database *db, struct rdb_iter *it)
 {
-    struct file file;
-    struct fd fd;
-    struct rdb_hdr hdr;
+    struct fs_file_t fd;
+    int r = 0;
 
     assert(db->locked);
-
+/*
     if (fs_find_file(&file, db->filename) < 0) {
         LOG_ERR("file not found for db %s", db->filename);
         return 0;
     }
-    fs_open(&fd, &file);
+*/
+    r = fs_open(&fd, db->filename, FS_O_CREATE | FS_O_RDWR);
+    if (r) {
+        LOG_ERR("open file: %s error", db->filename);
+	return r;
+    }
 
     return _rdb_iter_start_from_fd(&fd, it);
 }
@@ -219,7 +225,7 @@ int rdb_iter_next(struct rdb_iter *it)
 
 int rdb_iter_read_key(struct rdb_iter *it, void *key)
 {
-    struct fd fd = it->fd;
+    struct fs_file_t fd = it->fd;
 
     fs_seek(&fd, sizeof(struct rdb_hdr), FS_SEEK_CUR);
     return fs_read(&fd, key, it->key_len);
@@ -227,7 +233,7 @@ int rdb_iter_read_key(struct rdb_iter *it, void *key)
 
 int rdb_iter_read_data(struct rdb_iter *it, int ofs, void *data, int len)
 {
-    struct fd fd = it->fd;
+    struct fs_file_t fd = it->fd;
 
     if (it->data_len <= ofs)
         return 0;
@@ -287,7 +293,7 @@ static bool _compare(rdb_operator_t operator, uint8_t *where_prop, uint8_t *wher
     return rval;
 }
 
-int rdb_select(struct rdb_iter *it, list_head/*<rdb_select_result>*/ *head, struct rdb_selector *selectors)
+int rdb_select(struct rdb_iter *it, sys_dlist_t *head, struct rdb_selector *selectors)
 {
     int n = 0;
 
@@ -345,7 +351,7 @@ int rdb_select(struct rdb_iter *it, list_head/*<rdb_select_result>*/ *head, stru
         /* Construct result values. */
         int crv = 0;
         for (selp = selectors; selp->operator; selp++) {
-            void *r;
+            void *r = NULL;
 
             if (selp->operator < RDB_OP_RESULT)
                 continue;
@@ -382,7 +388,7 @@ int rdb_select(struct rdb_iter *it, list_head/*<rdb_select_result>*/ *head, stru
         }
 
         res->nres = nrv;
-        list_insert_tail(head, &res->node);
+        sys_dlist_append(head, &res->node);
 
         n++;
     }
@@ -398,20 +404,19 @@ void rdb_select_free_result(struct rdb_select_result *res)
     free(res);
 }
 
-void rdb_select_free_all(list_head *head)
+void rdb_select_free_all(sys_dlist_t *list)
 {
-    list_node *n;
-    while((n = list_get_head(head)))
-    {
-        list_remove(head, n);
+    sys_dnode_t *dn = NULL;
+    while ((dn = sys_dlist_get(list)) != NULL) {
 
-        struct rdb_select_result *res = list_elem(n, struct rdb_select_result, node);
+        struct rdb_select_result *res = SYS_DLIST_CONTAINER(dn, res, node);
         rdb_select_free_result(res);
     }
 }
 
-int _rdb_gc_for_bytes(const struct rdb_database *db, struct fd *fd, int bytes)
+int _rdb_gc_for_bytes(const struct rdb_database *db, struct fs_file_t *fd, int bytes)
 {
+#if 0
     fs_seek(fd, 0, FS_SEEK_SET);
 
     /* Count up how many bytes we stand to liberate. */
@@ -438,7 +443,7 @@ int _rdb_gc_for_bytes(const struct rdb_database *db, struct fd *fd, int bytes)
     }
     for (; valid; valid = rdb_iter_next(&it)) {
         int nbytes = sizeof(struct rdb_hdr) + it.key_len + it.data_len;
-        struct fd from = it.fd;
+        struct fs_file_t from = it.fd;
         while (nbytes) {
             uint8_t buf[16];
             size_t ibytes = nbytes < 16 ? nbytes : 16;
@@ -462,16 +467,16 @@ int _rdb_gc_for_bytes(const struct rdb_database *db, struct fd *fd, int bytes)
 
 int rdb_create(const struct rdb_database *db)
 {
-    struct file file;
-    if (fs_find_file(&file, db->filename) < 0) {
-        struct fd fd;
+    if (fs_stat(db->filename, NULL) < 0) {
+        struct fs_file_t fd;
         LOG_ERR("rdb %s does not exist, so I'm going to go create it, wish me luck", db->filename);
-        if (fs_creat(&fd, db->filename, db->def_db_size) == NULL) {
+        if (fs_open(&fd, db->filename, FS_O_CREATE) < 0) {
             LOG_ERR("nope, that did not work either, I give up");
             return Blob_DatabaseFull;
         }
-        fs_mark_written(&fd);
+        fs_close(&fd);
     }
+#endif
     return Blob_Success;
 }
 
@@ -508,16 +513,16 @@ int rdb_insert(const struct rdb_database *db, const uint8_t *key, uint16_t key_s
     }
 
     int pos = fs_seek(&it.fd, 0, FS_SEEK_CUR);
-    if (pos + sizeof(struct rdb_hdr) + key_size + data_size > it.fd.file.size) {
+    if (pos + sizeof(struct rdb_hdr) + key_size + data_size > db->def_db_size) {
         if (!_rdb_gc_for_bytes(db, &it.fd, sizeof(struct rdb_hdr) + key_size + data_size)) {
-            LOG_ERR("not enough space %d %d for new entry", it.fd.file.size, pos); //+ sizeof(struct rdb_hdr) + key_size + data_size);
+            LOG_ERR("not enough space %d %d for new entry", db->def_db_size, pos); //+ sizeof(struct rdb_hdr) + key_size + data_size);
             return Blob_DatabaseFull;
         }
     }
 
     /* Carefully start by writing a header. */
     struct rdb_hdr hdr;
-    struct fd hfd = it.fd;
+    struct fs_file_t hfd = it.fd;
 
     hdr.flags = 0xFF;
     hdr.key_len = key_size;
@@ -561,7 +566,7 @@ int rdb_update(const struct rdb_database *db, const uint8_t *key, const uint16_t
     struct rdb_iter it;
     rdb_select_result_list head;
     assert(db);
-    list_init_head(&head);
+    sys_dlist_init(&head);
 
     int rv = rdb_iter_start(db, &it);
     if (!rv) {
@@ -569,7 +574,7 @@ int rdb_update(const struct rdb_database *db, const uint8_t *key, const uint16_t
     }
 
     struct rdb_selector selectors[] = {
-        { RDB_SELECTOR_OFFSET_KEY, key_size, RDB_OP_EQ, key },
+        { RDB_SELECTOR_OFFSET_KEY, key_size, RDB_OP_EQ, (void *)key },
         { }
     };
 
@@ -593,7 +598,7 @@ int rdb_update(const struct rdb_database *db, const uint8_t *key, const uint16_t
 
 int rdb_delete(struct rdb_iter *it)
 {
-    struct fd fd = it->fd;
+    struct fs_file_t fd = it->fd;
     struct rdb_hdr hdr;
 
     if (fs_read(&fd, &hdr, sizeof(hdr)) < sizeof(hdr))
@@ -618,7 +623,7 @@ static struct fs_mount_t lfs_storage_mnt = {
 
 struct fs_mount_t *mp = &lfs_storage_mnt;
 
-static void rdb_init(const struct device *dev)
+static int rdb_init(const struct device *dev)
 {
     int r = 0;
     ARG_UNUSED(dev);
@@ -627,5 +632,7 @@ static void rdb_init(const struct device *dev)
     if (r) {
         LOG_ERR("failed to init rdb: %d", r);
     }
+    return r;
 }
+
 SYS_INIT(rdb_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
