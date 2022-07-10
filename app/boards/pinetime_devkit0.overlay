@@ -1,16 +1,12 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 / {
+        chosen {
+		zephyr,settings-partition = &storage_partition;
+        };
+
 	aliases {
 		vibe = &vibe;
 		charger = &charger_pin;
-	};
-
-	pwmleds {
-		compatible = "pwm-leds";
-		pwm_led0: pwm_led_0 {
-			pwms = <&pwm0 23>;
-			label = "backlight";
-		};
 	};
 
 	charger {
