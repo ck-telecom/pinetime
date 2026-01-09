@@ -7,7 +7,8 @@ manifest:
   remotes:
     - name: zephyrproject-rtos
       url-base: https://github.com/zephyrproject-rtos
-
+    - name: fwatch
+      url-base: https://gitee.com/fwatch
   # External projects
   #
   projects:
@@ -38,6 +39,7 @@ manifest:
       path: modules/crypto/tinycrypt
 
     - name: zephyr
+      remote: fwatch
       west-commands: scripts/west-commands.yml
       revision: main
   self:
