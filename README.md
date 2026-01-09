@@ -52,3 +52,6 @@ west flash
 ```
 west debug
 ```
+
+### History
+6 years ago, I started this project, and now it's alive!
