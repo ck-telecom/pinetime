@@ -1,0 +1,61 @@
+/* SPDX-FileCopyrightText: 2024 Google LLC */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+#pragma once
+
+#include <zephyr/kernel.h>
+
+// Define FreeRTOS types for Zephyr compatibility
+typedef void *QueueHandle_t;
+typedef void *TaskParameters_t;
+
+//! This is an enumeration of different tasks we've had in our system. Please don't rearrange
+//! these numbers! For example, the value of PebbleTask_Timers is hardcoded into our syscall
+//! assembly and terrible things will happen if you move this around.
+typedef enum PebbleTask {
+  PebbleTask_KernelMain,
+  PebbleTask_KernelBackground,
+  PebbleTask_Worker,
+  PebbleTask_App,
+
+  PebbleTask_BTHost,        // Bluetooth Host
+  PebbleTask_BTController,  // Bluetooth Controller
+  PebbleTask_BTHCI,         // Bluetooth HCI
+
+  PebbleTask_NewTimers,
+
+  PebbleTask_PULSE,
+
+  NumPebbleTask,
+
+  PebbleTask_Unknown
+} PebbleTask;
+
+typedef uint16_t PebbleTaskBitset;
+
+_Static_assert((1 << (8*sizeof(PebbleTaskBitset))) >= (1 << NumPebbleTask),
+               "The type of PebbleTaskBitset is not wide enough to "
+               "track all tasks in the PebbleTask enum");
+
+void pebble_task_register(PebbleTask task, k_tid_t task_handle);
+void pebble_task_unregister(PebbleTask task);
+
+const char* pebble_task_get_name(PebbleTask task);
+
+//! @return a single character that indicates the task
+char pebble_task_get_char(PebbleTask task);
+
+PebbleTask pebble_task_get_current(void);
+
+PebbleTask pebble_task_get_task_for_handle(k_tid_t task_handle);
+k_tid_t pebble_task_get_handle_for_task(PebbleTask task);
+
+void pebble_task_suspend(PebbleTask task);
+
+//! @return The queue handle to send events to the given task.
+QueueHandle_t pebble_task_get_to_queue(PebbleTask task);
+
+void pebble_task_create(PebbleTask pebble_task, void *task_params,
+                        k_tid_t *handle);
+
+void pebble_task_configure_idle_task(void);
