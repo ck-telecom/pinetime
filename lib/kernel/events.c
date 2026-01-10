@@ -23,25 +23,24 @@
 #include <stdbool.h>
 #include <string.h>
 
-// Zephyr message queues for events
-static struct k_msgq *s_kernel_event_queue = NULL;
-static struct k_msgq *s_from_app_event_queue = NULL;
-static struct k_msgq *s_from_worker_event_queue = NULL;
-static struct k_msgq *s_from_kernel_event_queue = NULL;
+#define MAX_KERNEL_EVENTS 32
+#define MAX_FROM_APP_EVENTS 10
+#define MAX_FROM_WORKER_EVENTS 5
+#define MAX_FROM_KERNEL_MAIN_EVENTS 14
+
+K_MSGQ_DEFINE(s_kernel_event_queue, sizeof(PebbleEvent), MAX_KERNEL_EVENTS, 4);
+K_MSGQ_DEFINE(s_from_app_event_queue, sizeof(PebbleEvent), MAX_FROM_APP_EVENTS, 4);
+K_MSGQ_DEFINE(s_from_worker_event_queue, sizeof(PebbleEvent), MAX_FROM_WORKER_EVENTS, 4);
+K_MSGQ_DEFINE(s_from_kernel_event_queue, sizeof(PebbleEvent), MAX_FROM_KERNEL_MAIN_EVENTS, 4);
 
 // Poll events for waiting on multiple queues
-static struct k_poll_event poll_events[3];
-
-static const int MAX_KERNEL_EVENTS = 32;
-static const int MAX_FROM_APP_EVENTS = 10;
-static const int MAX_FROM_WORKER_EVENTS = 5;
-static const int MAX_FROM_KERNEL_MAIN_EVENTS = 14;
-
-// Event queue buffers (statically allocated)
-static PebbleEvent s_kernel_event_buffer[MAX_KERNEL_EVENTS];
-static PebbleEvent s_from_app_event_buffer[MAX_FROM_APP_EVENTS];
-static PebbleEvent s_from_worker_event_buffer[MAX_FROM_WORKER_EVENTS];
-static PebbleEvent s_from_kernel_event_buffer[MAX_FROM_KERNEL_MAIN_EVENTS];
+static struct k_poll_event poll_events[3] = {
+  // Initialize poll events for waiting on multiple queues
+  K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_MSGQ_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, &s_kernel_event_queue),
+  K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_MSGQ_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, &s_from_app_event_queue),
+  K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_MSGQ_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, &s_from_worker_event_queue),
+  K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_MSGQ_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, &s_from_kernel_event_queue)
+};
 
 uint32_t s_current_event;
 
@@ -65,28 +64,6 @@ void events_init(void) {
   // FIXME:
   _Static_assert(sizeof(PebbleEvent) <= 12,
                  "You made the PebbleEvent bigger! It should be no more than 12");
-
-  // Create and initialize Zephyr message queues
-  s_kernel_event_queue = k_malloc(sizeof(struct k_msgq));
-  s_from_app_event_queue = k_malloc(sizeof(struct k_msgq));
-  s_from_worker_event_queue = k_malloc(sizeof(struct k_msgq));
-  s_from_kernel_event_queue = k_malloc(sizeof(struct k_msgq));
-
-  PBL_ASSERTN(s_kernel_event_queue != NULL);
-  PBL_ASSERTN(s_from_app_event_queue != NULL);
-  PBL_ASSERTN(s_from_worker_event_queue != NULL);
-  PBL_ASSERTN(s_from_kernel_event_queue != NULL);
-
-  // Initialize message queues with static buffers
-  k_msgq_init(s_kernel_event_queue, s_kernel_event_buffer, sizeof(PebbleEvent), MAX_KERNEL_EVENTS);
-  k_msgq_init(s_from_app_event_queue, s_from_app_event_buffer, sizeof(PebbleEvent), MAX_FROM_APP_EVENTS);
-  k_msgq_init(s_from_worker_event_queue, s_from_worker_event_buffer, sizeof(PebbleEvent), MAX_FROM_WORKER_EVENTS);
-  k_msgq_init(s_from_kernel_event_queue, s_from_kernel_event_buffer, sizeof(PebbleEvent), MAX_FROM_KERNEL_MAIN_EVENTS);
-
-  // Initialize poll events for waiting on multiple queues
-  poll_events[0] = K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_MSGQ_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, s_kernel_event_queue, 0);
-  poll_events[1] = K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_MSGQ_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, s_from_app_event_queue, 0);
-  poll_events[2] = K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_MSGQ_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, s_from_worker_event_queue, 0);
 }
 
 //! Get the from_process queue for a specific task
@@ -337,9 +314,7 @@ void event_cleanup(PebbleEvent* event) {
 void event_reset_from_process_queue(PebbleTask task) {
   // In Zephyr, we don't use queue sets like FreeRTOS, so this function is simplified
   // We just need to clean up and reset the appropriate queue based on the task type
-  
   struct k_msgq *reset_queue = NULL;
-  
   if (task == PebbleTask_App) {
     reset_queue = s_from_app_event_queue;
   } else if (task == PebbleTask_Worker) {
@@ -348,10 +323,10 @@ void event_reset_from_process_queue(PebbleTask task) {
     WTF;
     return;
   }
-  
+
   // Clean up and reset the specified queue
   event_queue_cleanup_and_reset((QueueHandle_t)reset_queue);
-  
+
   // In Zephyr, we don't need to manage queue sets, so no additional steps are needed
 }
 
@@ -375,7 +350,6 @@ BaseType_t event_queue_cleanup_and_reset(QueueHandle_t queue) {
     // cleanup the event, free associated memory if applicable
     event_cleanup(&event);
   }
-
   // In Zephyr, we don't need to explicitly reset the message queue
   // The above loop has already emptied it
   return pdPASS;
