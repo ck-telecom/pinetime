@@ -1,4 +1,4 @@
-#include "drivers/battery.h"
+#include "drivers/battery/battery.h"
 
 void battery_init(void) {
 }
