@@ -49,3 +49,6 @@ GBitmap framebuffer_get_as_bitmap(FrameBuffer *f, const GSize *size);
 
 //! Get the framebuffer size
 GSize framebuffer_get_size(FrameBuffer *f);
+
+//! Flush the framebuffer to the display
+void framebuffer_flush(FrameBuffer *f);
