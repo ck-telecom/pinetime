@@ -6,7 +6,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
 
-void main(void)
+int main(void)
 {
     printk("Hello Zephyr on PineTime!\n");
     printk("This is a simple test to verify the build system.\n");
@@ -15,4 +15,6 @@ void main(void)
         k_msleep(1000);
         printk("Still running...\n");
     }
+
+    return 0;
 }

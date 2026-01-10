@@ -1,10 +1,10 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "system/bootbits.h"
-
 #include <zephyr/drivers/retained_mem.h>
 #include <zephyr/device.h>
+
+#include "system/bootbits.h"
 
 #include "system/logging.h"
 #include "system/version.h"
@@ -35,8 +35,7 @@ void boot_bit_set(BootBitValue bit) {
   uint32_t current_value = boot_bits_get();
   current_value |= bit;
 
-  int32_t rc = retained_mem_write(retained_mem_device, BOOTBITS_OFFSET,
-                                 &current_value, sizeof(current_value));
+  int32_t rc = retained_mem_write(retained_mem_device, BOOTBITS_OFFSET, (void *)&current_value, sizeof(current_value));
   if (rc != 0) {
     PBL_LOG(LOG_LEVEL_ERROR, "Failed to set boot bit: %d", rc);
   }
@@ -79,16 +78,7 @@ void command_boot_bits_get(void) {
 }
 
 void boot_version_write(void) {
-  if (boot_version_read() == TINTIN_METADATA.version_timestamp) {
-    return;
-  }
 
-  int32_t rc = retained_mem_write(retained_mem_device, VERSION_OFFSET,
-                                 &TINTIN_METADATA.version_timestamp,
-                                 sizeof(TINTIN_METADATA.version_timestamp));
-  if (rc != 0) {
-    PBL_LOG(LOG_LEVEL_ERROR, "Failed to write boot version: %d", rc);
-  }
 }
 
 uint32_t boot_version_read(void) {

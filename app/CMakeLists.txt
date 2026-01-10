@@ -1,3 +1,4 @@
+# copyright (c) 2026 Qingsong Gou <gouqs@hotmail.com>
 # SPDX-License-Identifier: Apache-2.0
 
 # Add out-off-tree drivers
@@ -9,7 +10,6 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(pinetime VERSION 0.1.1)
 
 target_sources(app PRIVATE main.c)
-target_sources(app PRIVATE system/bootbits.c)
 
 include_directories(.)
 
