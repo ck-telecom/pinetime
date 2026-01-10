@@ -4,10 +4,13 @@
 This project try to port Zephyr to Pebble
 
 #### Hardware
-PineTime
-Pebble Duo 2
-Pebble Time 2
-Pebble Round 2
+PineTime(pinetime_devkit0)
+
+Pebble Duo 2(p2d)
+
+Pebble Time 2(pt2)
+
+Pebble Round 2(pr2)
 
 #### Initialization
 Setup Zephyr environment

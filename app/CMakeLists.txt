@@ -9,36 +9,11 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(pinetime VERSION 0.1.1)
 
 target_sources(app PRIVATE main.c)
-target_sources(app PRIVATE drivers/display/display.c)
-#target_sources(app PRIVATE src/service/button.c)
-#target_sources(app PRIVATE src/service/button_cfg.c)
-#target_sources(app PRIVATE src/service/vibrator.c)
-#target_sources(app PRIVATE src/service/display.c)
-#target_sources(app PRIVATE src/service/touch.c)
-#target_sources(app PRIVATE src/service/bma4xx.c)
-#target_sources(app PRIVATE src/service/charger.c)
-#target_sources(app PRIVATE src/service/battery.c)
-#target_sources(app PRIVATE src/service/event_service.c)
-#target_sources(app PRIVATE src/service/display_power.c)
-#target_sources(app PRIVATE src/service/backlight.c)
-#target_sources(app PRIVATE src/event/event_service.c)
-#target_sources(app PRIVATE src/event/event_service_mem.c)
+target_sources(app PRIVATE system/bootbits.c)
 
-#target_sources(app PRIVATE src/bluetooth/bt.c)
-#
-#target_sources(app PRIVATE src/apps/app.c)
-#target_sources(app PRIVATE src/apps/app/clock.c)
-##target_sources(app PRIVATE src/apps/app/music.c)
-#target_sources(app PRIVATE src/apps/app/passkey.c)
-#
-zephyr_include_directories(drivers/display)
-#zephyr_include_directories(src)
-#zephyr_include_directories(src/bluetooth)
-#zephyr_include_directories(src/bluetooth/service)
-#zephyr_include_directories(src/apps)
-#
-#add_subdirectory(src)
-#add_subdirectory(system)
+include_directories(.)
+
+add_subdirectory(drivers)
 
 execute_process(COMMAND git rev-parse --short HEAD
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
