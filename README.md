@@ -1,7 +1,7 @@
 # pinetime
 
 #### Introduction
-This project try to port Zephyr to Pebble
+This project try to port PebbleOS to Zephyr
 
 #### Hardware
 PineTime(pinetime_devkit0)

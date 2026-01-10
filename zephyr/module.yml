@@ -1,6 +1,3 @@
 build:
   cmake: .
   kconfig: Kconfig.pinetime
-  settings:
-    board_root: .
-    dts_root: .
