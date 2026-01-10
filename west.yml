@@ -9,38 +9,17 @@ manifest:
       url-base: https://github.com/zephyrproject-rtos
     - name: fwatch
       url-base: https://gitee.com/fwatch
-  # External projects
-  #
+
   projects:
-    - name: cmsis
-      revision: b0612c97c1401feeb4160add6462c3627fe90fc7
-      path: modules/hal/cmsis
-
-    - name: hal_nordic
-      revision: 1f9145e8c8359f103b4ac5085c6f5d2e66a2557d
-      path: modules/hal/nordic
-
-    - name: littlefs
-      path: modules/fs/littlefs
-      groups:
-        - fs
-      revision: 7b2cf4ba759bd530b543644e2790b07cf20cd6aa
-
-    - name: lvgl
-      revision: a2e17073e5208c221e24e3c2b3b6c473e878bd1e
-      path: modules/lib/gui/lvgl
-
-    - name: segger
-      revision: 3a52ab222133193802d3c3b4d21730b9b1f1d2f6
-      path: modules/debug/segger
-
-    - name: tinycrypt
-      revision: 3e9a49d2672ec01435ffbf0d788db6d95ef28de0
-      path: modules/crypto/tinycrypt
-
     - name: zephyr
       remote: fwatch
       west-commands: scripts/west-commands.yml
       revision: main
+      import:
+        name-allowlist:
+          - cmsis_6
+          - hal_nordic
+          - hal_sifli
+
   self:
     path: pinetime

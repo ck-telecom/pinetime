@@ -15,33 +15,33 @@
 #include "services/normal/app_outbox_service.h"
 #include "syscall/syscall.h"
 
-#include "FreeRTOS.h"
-#include "queue.h"
+#include <zephyr/kernel.h>
+#include <freertos_types.h>
+#include <portmacro.h>
 
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
 
-static QueueHandle_t s_kernel_event_queue = NULL;
-static QueueHandle_t s_from_app_event_queue = NULL;
-static QueueHandle_t s_from_worker_event_queue = NULL;
+// Zephyr message queues for events
+static struct k_msgq *s_kernel_event_queue = NULL;
+static struct k_msgq *s_from_app_event_queue = NULL;
+static struct k_msgq *s_from_worker_event_queue = NULL;
+static struct k_msgq *s_from_kernel_event_queue = NULL;
 
-// The following conventions insure that the s_from_kernel_event_queue queue will always have sufficient space and that
-// KernelMain will never deadlock trying to send an event to itself:
-// 1.) KernelMain must never enqueue more than MAX_FROM_KERNEL_MAIN_EVENTS events to itself while processing another
-//     event.
-// 2.) The ONLY task that posts events to s_from_kernel_event_queue is the KernelMain task.
-// 3.) Whenever KernelMain wants to post an event to itself, it MUST use this queue.
-// 4.) The KernelMain task will always service this queue first, before servicing the kernel or from_app queues.
-static QueueHandle_t s_from_kernel_event_queue = NULL;
-
-// This queue set contains the s_kernel_event_queue, s_from_app_event_queue, and s_from_worker_event_queue queues
-static QueueSetHandle_t s_system_event_queue_set = NULL;
+// Poll events for waiting on multiple queues
+static struct k_poll_event poll_events[3];
 
 static const int MAX_KERNEL_EVENTS = 32;
 static const int MAX_FROM_APP_EVENTS = 10;
 static const int MAX_FROM_WORKER_EVENTS = 5;
 static const int MAX_FROM_KERNEL_MAIN_EVENTS = 14;
+
+// Event queue buffers (statically allocated)
+static PebbleEvent s_kernel_event_buffer[MAX_KERNEL_EVENTS];
+static PebbleEvent s_from_app_event_buffer[MAX_FROM_APP_EVENTS];
+static PebbleEvent s_from_worker_event_buffer[MAX_FROM_WORKER_EVENTS];
+static PebbleEvent s_from_kernel_event_buffer[MAX_FROM_KERNEL_MAIN_EVENTS];
 
 uint32_t s_current_event;
 
@@ -59,8 +59,6 @@ static void prv_queue_dump(QueueHandle_t queue) {
 #endif
 
 void events_init(void) {
-  PBL_ASSERTN(s_system_event_queue_set == NULL);
-
   // This assert is to make sure we don't accidentally bloat our PebbleEvent unecessarily. If you hit this
   // assert and you have a good reason for making the event bigger, feel free to relax the restriction.
   //PBL_LOG(LOG_LEVEL_DEBUG, "PebbleEvent size is %u", sizeof(PebbleEvent));
@@ -68,24 +66,27 @@ void events_init(void) {
   _Static_assert(sizeof(PebbleEvent) <= 12,
                  "You made the PebbleEvent bigger! It should be no more than 12");
 
+  // Create and initialize Zephyr message queues
+  s_kernel_event_queue = k_malloc(sizeof(struct k_msgq));
+  s_from_app_event_queue = k_malloc(sizeof(struct k_msgq));
+  s_from_worker_event_queue = k_malloc(sizeof(struct k_msgq));
+  s_from_kernel_event_queue = k_malloc(sizeof(struct k_msgq));
 
-  s_system_event_queue_set = xQueueCreateSet(MAX_KERNEL_EVENTS + MAX_FROM_APP_EVENTS);
-
-  s_kernel_event_queue = xQueueCreate(MAX_KERNEL_EVENTS, sizeof(PebbleEvent));
   PBL_ASSERTN(s_kernel_event_queue != NULL);
-
-  s_from_app_event_queue = xQueueCreate(MAX_FROM_APP_EVENTS , sizeof(PebbleEvent));
   PBL_ASSERTN(s_from_app_event_queue != NULL);
-
-  s_from_worker_event_queue = xQueueCreate(MAX_FROM_WORKER_EVENTS , sizeof(PebbleEvent));
   PBL_ASSERTN(s_from_worker_event_queue != NULL);
-
-  s_from_kernel_event_queue = xQueueCreate(MAX_FROM_KERNEL_MAIN_EVENTS , sizeof(PebbleEvent));
   PBL_ASSERTN(s_from_kernel_event_queue != NULL);
 
-  xQueueAddToSet(s_kernel_event_queue, s_system_event_queue_set);
-  xQueueAddToSet(s_from_app_event_queue, s_system_event_queue_set);
-  xQueueAddToSet(s_from_worker_event_queue, s_system_event_queue_set);
+  // Initialize message queues with static buffers
+  k_msgq_init(s_kernel_event_queue, s_kernel_event_buffer, sizeof(PebbleEvent), MAX_KERNEL_EVENTS);
+  k_msgq_init(s_from_app_event_queue, s_from_app_event_buffer, sizeof(PebbleEvent), MAX_FROM_APP_EVENTS);
+  k_msgq_init(s_from_worker_event_queue, s_from_worker_event_buffer, sizeof(PebbleEvent), MAX_FROM_WORKER_EVENTS);
+  k_msgq_init(s_from_kernel_event_queue, s_from_kernel_event_buffer, sizeof(PebbleEvent), MAX_FROM_KERNEL_MAIN_EVENTS);
+
+  // Initialize poll events for waiting on multiple queues
+  poll_events[0] = K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_MSGQ_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, s_kernel_event_queue, 0);
+  poll_events[1] = K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_MSGQ_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, s_from_app_event_queue, 0);
+  poll_events[2] = K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_MSGQ_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, s_from_worker_event_queue, 0);
 }
 
 //! Get the from_process queue for a specific task
@@ -131,8 +132,10 @@ static bool prv_event_put_isr(QueueHandle_t queue, const char* queue_type, uintp
                                   PebbleEvent* event) {
   PBL_ASSERTN(queue);
 
-  portBASE_TYPE should_context_switch = pdFALSE;
-  if (!xQueueSendToBackFromISR(queue, event, &should_context_switch)) {
+  struct k_msgq *msgq = (struct k_msgq *)queue;
+  int result = k_msgq_put_from_isr(msgq, event, K_NO_WAIT);
+
+  if (result != 0) {
     prv_log_event_put_failure(queue_type, saved_lr, event);
 
 #ifdef NO_WATCHDOG
@@ -143,12 +146,13 @@ static bool prv_event_put_isr(QueueHandle_t queue, const char* queue_type, uintp
     reset_due_to_software_failure();
   }
 
-  return should_context_switch;
+  return false; // No context switch needed in Zephyr ISR
 }
 
 static bool prv_try_event_put(QueueHandle_t queue, PebbleEvent *event) {
   PBL_ASSERTN(queue);
-  return (xQueueSendToBack(queue, event, milliseconds_to_ticks(3000)) == pdTRUE);
+  struct k_msgq *msgq = (struct k_msgq *)queue;
+  return (k_msgq_put(msgq, event, K_MSEC(3000)) == 0);
 }
 
 static void prv_event_put(QueueHandle_t queue,
@@ -156,8 +160,9 @@ static void prv_event_put(QueueHandle_t queue,
                           uintptr_t saved_lr,
                           PebbleEvent* event) {
   PBL_ASSERTN(queue);
+  struct k_msgq *msgq = (struct k_msgq *)queue;
 
-  if (!xQueueSendToBack(queue, event, milliseconds_to_ticks(3000))) {
+  if (k_msgq_put(msgq, event, K_MSEC(3000)) != 0) {
     // We waited a reasonable amount of time here before failing. We don't want to wait too long because
     // if the queue really is stuck we'll just get a watchdog reset, which will be harder to debug than
     // just dieing here. However, we want to wait a non-zero amount of time to provide for a little bit
@@ -166,7 +171,7 @@ static void prv_event_put(QueueHandle_t queue,
     prv_log_event_put_failure(queue_type, saved_lr, event);
 
 #if EVENT_DEBUG
-    prv_queue_dump(queue);
+    // prv_queue_dump(queue); // Not implemented for Zephyr
 #endif
 
     reset_due_to_software_failure();
@@ -214,53 +219,52 @@ bool event_try_put_from_process(PebbleTask task, PebbleEvent* event) {
 }
 
 bool event_take_timeout(PebbleEvent* event, int timeout_ms) {
-  PBL_ASSERTN(s_system_event_queue_set);
-
   s_current_event = 0;
 
   // We must prioritize the from_kernel queue and always empty that first in order to avoid deadlocks in
   // KernelMain. See comments at top of file where s_from_kernel_event_queue is declared.
 
   // Check the from_kernel queue first to see if we posted any events to ourself.
-  portBASE_TYPE result = xQueueReceive(s_from_kernel_event_queue, event, 0);
-  if (result) {
+  int result = k_msgq_get(s_from_kernel_event_queue, event, K_NO_WAIT);
+  if (result == 0) {
     s_current_event = prv_get_fancy_type_from_event(event);
     return true;
   }
 
   // Wait for either the from_app, from_worker, or kernel queue to be ready.
-  QueueSetMemberHandle_t activated_queue = xQueueSelectFromSet(s_system_event_queue_set,
-                                                              milliseconds_to_ticks(timeout_ms));
-  if (!activated_queue) {
-    return false;
+  // Copy poll events to avoid modifying the original array
+  struct k_poll_event local_poll_events[3];
+  memcpy(local_poll_events, poll_events, sizeof(poll_events));
+
+  result = k_poll(local_poll_events, 3, K_MSEC(timeout_ms));
+  if (result != 0) {
+    return false; // No event received within timeout
   }
 
   // Always service the kernel queue first. This prevents a misbehaving app from starving us.
   // If we're a little lazy servicing the app, the app will just block itself when the queue gets full.
-  if (xQueueReceive(s_kernel_event_queue, event, 0) == pdFALSE) {
-    // Process the activated queue. This insures that events are handled in FIFO order from the app and worker
-    // tasks. Note that sometimes the activated_queue can be the s_kernel_event_queue, even though
-    // the above xQueueReceive returned no event
-    if (activated_queue == s_from_app_event_queue || activated_queue == s_from_worker_event_queue) {
-      result = xQueueReceive(activated_queue, event, 0);
-    }
-    if (!result) {
-      result = xQueueReceive(s_from_app_event_queue, event, 0);
-    }
-    if (!result) {
-      result = xQueueReceive(s_from_worker_event_queue, event, 0);
-    }
-
-    // If there was nothing in the queue, return false. We are misusing the queue set by pulling events out
-    //  from the s_kernel_event_queue queue before it's activated so likely, the activated queue was
-    //  s_kernel_event_queue.
-    if (!result) {
-      return false;
-    }
+  result = k_msgq_get(s_kernel_event_queue, event, K_NO_WAIT);
+  if (result == 0) {
+    s_current_event = prv_get_fancy_type_from_event(event);
+    return true;
   }
 
-  s_current_event = prv_get_fancy_type_from_event(event);
-  return true;
+  // Process the from_app queue
+  result = k_msgq_get(s_from_app_event_queue, event, K_NO_WAIT);
+  if (result == 0) {
+    s_current_event = prv_get_fancy_type_from_event(event);
+    return true;
+  }
+
+  // Process the from_worker queue
+  result = k_msgq_get(s_from_worker_event_queue, event, K_NO_WAIT);
+  if (result == 0) {
+    s_current_event = prv_get_fancy_type_from_event(event);
+    return true;
+  }
+
+  // If there was nothing in any of the queues, return false
+  return false;
 }
 
 void **event_get_buffer(PebbleEvent *event) {
@@ -331,44 +335,24 @@ void event_cleanup(PebbleEvent* event) {
 }
 
 void event_reset_from_process_queue(PebbleTask task) {
-  // Unfortunately, current versions of FreeRTOS don't really handle resetting a queue that's part
-  // of a queue set all that well. See PBL-1817. We'll clean up the queue set manually.
-
-  // Notice that we don't disable the scheduler or enter a critical section here. This is because
-  // it is usually unsafe to do so when making other FreeRTOS calls that might cause  context switch
-  // (see http://www.freertos.org/a00134.html). I think this is OK though - the worse that can
-  // happen is that we end up with extra items in the s_system_event_queue_set that don't belong
-  // there and event_take_timeout() is tolerant of that. Also see the discussion at
-  // https://github.com/pebble/tintin/pull/2416#discussion_r16641981.
-
-  // We want to remove all references to the queue we just reset, while keeping references to other
-  // queues in check. This would be really annoying, but luckily we only have two other queues in
-  // the set. Count the number of times the other queues exist in the queue set, clear the queue,
-  // and then restore the original count.
-  QueueHandle_t reset_queue, preserve_queue;
+  // In Zephyr, we don't use queue sets like FreeRTOS, so this function is simplified
+  // We just need to clean up and reset the appropriate queue based on the task type
+  
+  struct k_msgq *reset_queue = NULL;
+  
   if (task == PebbleTask_App) {
     reset_queue = s_from_app_event_queue;
-    preserve_queue = s_from_worker_event_queue;
   } else if (task == PebbleTask_Worker) {
     reset_queue = s_from_worker_event_queue;
-    preserve_queue = s_from_app_event_queue;
   } else {
-    preserve_queue = reset_queue = NULL;
     WTF;
+    return;
   }
-
-  xQueueReset(s_system_event_queue_set);
-  event_queue_cleanup_and_reset(reset_queue);
-
-  int num_kernel_events_enqueued = uxQueueMessagesWaiting(s_kernel_event_queue);
-  for (int i = 0; i < num_kernel_events_enqueued; ++i) {
-    xQueueSend(s_system_event_queue_set, &s_kernel_event_queue, 0);
-  }
-
-  int num_client_task_events_enqueued = uxQueueMessagesWaiting(preserve_queue);
-  for (int i = 0; i < num_client_task_events_enqueued; ++i) {
-    xQueueSend(s_system_event_queue_set, &preserve_queue, 0);
-  }
+  
+  // Clean up and reset the specified queue
+  event_queue_cleanup_and_reset((QueueHandle_t)reset_queue);
+  
+  // In Zephyr, we don't need to manage queue sets, so no additional steps are needed
 }
 
 
@@ -377,10 +361,11 @@ QueueHandle_t event_kernel_to_kernel_event_queue(void) {
 }
 
 BaseType_t event_queue_cleanup_and_reset(QueueHandle_t queue) {
-  int num_events_in_queue = uxQueueMessagesWaiting(queue);
+  struct k_msgq *msgq = (struct k_msgq *)queue;
   PebbleEvent event;
-  for (int i = 0; i < num_events_in_queue; ++i) {
-    PBL_ASSERTN(xQueueReceive(queue, &event, 0) != pdFAIL);
+
+  // Process all events in the queue
+  while (k_msgq_get(msgq, &event, K_NO_WAIT) == 0) {
     // event service does some book-keeping about events, notify it that we're dropping these.
     sys_event_service_cleanup(&event);
 #if !RECOVERY_FW
@@ -391,5 +376,7 @@ BaseType_t event_queue_cleanup_and_reset(QueueHandle_t queue) {
     event_cleanup(&event);
   }
 
-  return xQueueReset(queue);
+  // In Zephyr, we don't need to explicitly reset the message queue
+  // The above loop has already emptied it
+  return pdPASS;
 }
