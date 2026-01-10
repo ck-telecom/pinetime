@@ -1,0 +1,290 @@
+{
+    "_comment": [
+        "This file defines the different types we allocate on an application's heap. For          ",
+        "compatibility purposes we need to keep these sizes the same from release to release     ",
+        "in order to ensure that an app that ran on one version of the firmware works on another ",
+        "version without running out of memory. We support allocating different sizes for        ",
+        "apps, 3.x apps, and system apps with different amounts of padding.                      ",
+        "",
+        "Types are defined below with the following parameters:                                  ",
+        " name: The name of the type as it appears in our codebase. This type definition must    ",
+        "       be visibile in one of the headers in the headers list below.                     ",
+        " size_2x: The size in bytes that should be used for legacy2 apps                        ",
+        " size_3x: The size in bytes that should be used for 3.x apps                            ",
+        " size_3x_padding: The amount of padding to add directly to this particular struct.      ",
+        " dependencies: Which other type is composed of. This will increase the final 3x         ",
+        "               padding by the combined padding of all dependent structs.                ",
+        "",
+        " Note that sizeof(type) == size_3x_padding + sum(dependencies.size_3x_padding) or else  ",
+        " an assert will trigger telling you that you've accidentally shifted the padding around."
+    ],
+    "headers": [
+        "applib/event_service_client.h",
+        "applib/plugin_service_private.h",
+        "applib/graphics/gbitmap_sequence.h",
+        "applib/graphics/gtypes.h",
+        "applib/health_service_private.h",
+        "applib/voice/dictation_session_private.h",
+        "applib/voice/transcription_dialog.h",
+        "applib/voice/voice_window_private.h",
+        "applib/ui/action_bar_layer.h",
+        "applib/ui/action_menu_window_private.h",
+        "applib/ui/animation.h",
+        "applib/ui/animation_private.h",
+        "applib/ui/bitmap_layer.h",
+        "applib/ui/content_indicator_private.h",
+        "applib/ui/inverter_layer.h",
+        "applib/ui/layer.h",
+        "applib/ui/menu_layer.h",
+        "applib/ui/menu_layer_private.h",
+        "applib/ui/number_window.h",
+        "applib/ui/option_menu_window.h",
+        "applib/ui/property_animation_private.h",
+        "applib/ui/qr_code.h",
+        "applib/ui/rotate_bitmap_layer.h",
+        "applib/ui/scroll_layer.h",
+        "applib/ui/selection_layer.h",
+        "applib/ui/simple_menu_layer.h",
+        "applib/ui/status_bar_layer.h",
+        "applib/ui/text_layer.h",
+        "applib/ui/window.h",
+        "applib/ui/window_stack_private.h",
+        "applib/legacy2/ui/animation_legacy2.h"
+    ],
+    "types": [{
+        "name": "ActionBarLayer",
+        "size_3x_padding": 28,
+        "size_3x": 172,
+        "dependencies": ["Layer"],
+        "_comment": "ActionBarLayerLegacy2 should be used for 2.x apps"
+    }, {
+        "name": "ActionMenuItem",
+        "size_3x_padding": 8,
+        "size_3x": 20,
+        "_comment": "Only for 3.x apps"
+    }, {
+        "name": "ActionMenuLevel",
+        "size_3x_padding": 12,
+        "size_3x": 32,
+        "_comment": "Only for 3.x apps"
+    }, {
+        "name": "AnimationContext",
+        "size_3x_padding": 8,
+        "size_3x": 16,
+        "_comment": "Only for 3.x apps"
+    }, {
+        "name": "ActionMenuData",
+        "size_3x_padding": 90,
+        "size_3x": 930,
+        "dependencies": ["Window", "MenuLayer", "Layer", "Layer"],
+        "_comment": "Only for 3.x apps"
+    }, {
+        "name": "AnimationLegacy2",
+        "size_2x": 40,
+        "_comment": "Only for legacy2 apps"
+    }, {
+        "name": "AnimationPrivate",
+        "size_2x": 60,
+        "size_3x_padding": 16,
+        "size_3x": 76
+    }, {
+        "name": "AnimationAuxState",
+        "size_3x_padding": 12,
+        "size_3x": 32,
+        "_comment": "Only for 3.x apps"
+    }, {
+        "name": "BitmapLayer",
+        "size_2x": 60,
+        "size_3x_padding": 8,
+        "size_3x": 76,
+        "dependencies": ["Layer"]
+    }, {
+        "name": "ContentIndicator",
+        "size_3x_padding": 64,
+        "size_3x": 108,
+        "_comment": "Only for 3.x apps"
+    }, {
+        "name": "FontInfo",
+        "size_2x": 40,
+        "size_3x_padding": 16,
+        "size_3x": 56
+    }, {
+        "name": "GBitmapLegacy2",
+        "size_2x": 16,
+        "_comment": "Only for Legacy 2.x apps."
+    }, {
+        "name": "GBitmap",
+        "size_3x_padding": 8,
+        "size_3x": 32,
+        "_comment": "Only for 3.x apps."
+    }, {
+        "name": "GBitmapSequence",
+        "size_3x_padding": 16,
+        "size_3x": 88,
+        "_comment": "Only for 3.x apps"
+    }, {
+        "name": "InverterLayer",
+        "size_2x": 52,
+        "size_3x": 52,
+        "_comment": [ "Only meant for 2.x apps, but there are 3.x apps out there that abuse this.",
+                      "See PBL-31276.",
+                      "Layer is not marked as a dependency (event though it is!) because Layer ",
+                      "has padding on it we don't want. We don't want this padding because we ",
+                      "didn't have any originally with 3.x, and now we can't retroactively go ",
+                      "back and add some without breaking our contract." ]
+    }, {
+        "name": "Layer",
+        "size_2x": 52,
+        "size_3x_padding": 8,
+        "size_3x": 60
+    }, {
+        "name": "MenuLayer",
+        "size_2x": 380,
+        "size_3x_padding": 32,
+        "size_3x": 452,
+        "dependencies": ["ScrollLayer", "InverterLayer"],
+        "_comment": "FIXME: MenuLayer has internal padding that needs removing"
+    }, {
+        "name": "NumberWindow",
+        "size_2x": 352,
+        "size_3x_padding": 204,
+        "size_3x": 568,
+        "dependencies": ["Window", "ActionBarLayer", "TextLayer", "TextLayer"]
+    }, {
+        "name": "PluginServiceEntry",
+        "size_2x": 16,
+        "size_3x_padding": 8,
+        "size_3x": 24
+    }, {
+        "name": "PropertyAnimationPrivate",
+        "size_3x_padding": 16,
+        "size_3x": 144,
+        "dependencies": ["AnimationPrivate"],
+        "_comment": "Only for 3.x apps"
+    }, {
+        "name": "RotBitmapLayer",
+        "size_2x": 76,
+        "size_3x_padding": 12,
+        "size_3x": 96,
+        "dependencies": ["Layer"]
+    }, {
+        "name": "ScrollLayer",
+        "size_2x": 204,
+        "size_3x_padding": 16,
+        "size_3x": 212,
+        "dependencies": ["Layer", "Layer", "Layer"]
+    }, {
+        "name": "SimpleMenuLayer",
+        "size_2x": 392,
+        "size_3x_padding": 32,
+        "size_3x": 496,
+        "dependencies": ["MenuLayer"]
+    }, {
+        "name": "StatusBarLayer",
+        "size_2x": 112,
+        "size_3x_padding": 80,
+        "size_3x": 200,
+        "dependencies": ["Layer"],
+        "_comment": "Generously padded because it's not feature complete yet"
+    }, {
+        "name": "TextLayer",
+        "size_2x": 68,
+        "size_3x_padding": 16,
+        "size_3x": 92,
+        "dependencies": ["Layer"]
+    }, {
+        "name": "TextLayout",
+        "size_2x": 24,
+        "_comment": "Only for legacy2 apps"
+    }, {
+        "name": "TextLayoutExtended",
+        "size_3x_padding": 0,
+        "size_3x": 40,
+        "_comment": "Only for 3.x apps"
+    }, {
+        "name": "Window",
+        "size_2x": 92,
+        "size_3x_padding": 0,
+        "size_3x": 100,
+        "dependencies": ["Layer"]
+    }, {
+        "name": "WindowStackItem",
+        "size_2x": 16,
+        "size_3x_padding": 16,
+        "size_3x": 32
+    }, {
+        "name": "MenuRenderIterator",
+        "size_2x": 104,
+        "size_3x_padding": 0,
+        "size_3x": 112,
+        "dependencies": ["Layer"]
+    }, {
+        "name": "EventServiceInfo",
+        "size_3x_padding": 20,
+        "size_3x": 37,
+        "_comment": "Generously padded because it's not feature complete yet (only 3.x)"
+    }, {
+        "name": "KinoPlayer",
+        "size_3x_padding": 20,
+        "size_3x": 52,
+        "_comment": "Generously padded because it's not feature complete yet (only 3.x)"
+    }, {
+        "name": "KinoLayer",
+        "size_3x_padding": 36,
+        "size_3x": 164,
+        "dependencies": ["Layer", "KinoPlayer"],
+        "_comment": "Generously padded because it's not feature complete yet (only 3.x)"
+    }, {
+        "name": "Dialog",
+        "size_3x_padding": 40,
+        "size_3x": 640,
+        "dependencies": ["Window", "StatusBarLayer", "TextLayer", "KinoLayer"],
+        "_comment": "Generously padded because it's not feature complete yet (only 3.x)"
+    }, {
+        "name": "ExpandableDialog",
+        "size_3x_padding": 44,
+        "size_3x": 1280,
+        "dependencies": ["Dialog", "TextLayer", "ScrollLayer", "ActionBarLayer", "Layer"],
+        "_comment": "Generously padded because it's not feature complete yet (only 3.x)"
+    }, {
+        "name": "TranscriptionDialog",
+        "size_3x_padding": 40,
+        "size_3x": 1352,
+        "dependencies": ["ExpandableDialog"],
+        "_comment": "Generously padded because it's not feature complete yet (only 3.x)"
+    }, {
+        "name": "VoiceWindow",
+        "size_3x_padding": 36,
+        "size_3x": 2368,
+        "dependencies": ["TranscriptionDialog", "Layer", "Layer", "StatusBarLayer", "TextLayer", 
+                         "KinoLayer", "Window", "EventServiceInfo"],
+        "_comment": "Generously padded because it's not feature complete yet (only 3.x)"
+    }, {
+        "name": "DictationSession",
+        "size_3x_padding": 1196,
+        "size_3x": 1284,
+        "dependencies": ["EventServiceInfo", "EventServiceInfo"],
+        "_comment": ["Enough padding to enable RAM allocation of required resources up-front if ",
+                     "the resources it uses need to be moved out of MCU flash  (only 3.x)"]
+    }, {
+        "name": "HealthServiceCache",
+        "size_3x_padding": 740,
+        "size_3x": 2048,
+        "dependencies": [],
+        "_comment": ["Cache to speed up frequent health service API calls (only 3.9+)"]
+    }, {
+        "name": "OptionMenu",
+        "size_2x": 684,
+        "size_3x_padding": 12,
+        "size_3x": 880,
+        "dependencies": ["Window", "StatusBarLayer", "MenuLayer", "GBitmap", "GBitmap"],
+        "_comment": "Not exported yet (only 3.x)"
+    }, {
+        "name": "QRCode",
+        "size_3x_padding": 0,
+        "size_3x": 72,
+        "dependencies": ["Layer"],
+        "_comment": "Not exported yet (only 3.x)"
+    }]
+}
+
