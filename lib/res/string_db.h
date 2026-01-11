@@ -1,0 +1,1 @@
+#define LV_STRING_ID_HELLO		0

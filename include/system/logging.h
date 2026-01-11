@@ -70,7 +70,7 @@
 #define PBL_SHOULD_LOG(level) ((level) <= DEFAULT_LOG_LEVEL)
 
 // Define log module for Zephyr
-LOG_MODULE_REGISTER(pbl_log, LOG_LEVEL_DBG);
+LOG_MODULE_DECLARE(pbl_log, LOG_LEVEL_DBG);
 
 // Main logging macro implementation
 #define PBL_LOG(level, fmt, ...) \
