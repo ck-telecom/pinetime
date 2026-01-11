@@ -1,84 +1,64 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "util/list.h"
-#include "services/common/event_service.h"
-#include "kernel/kernel_applib_state.h"
+#include "applib/event_service_client.h"
 
-#include "event_service_client.h"
-#include "process_management/app_manager.h"
-#include "util/list.h"
-#include "applib/app_logging.h"
-#include "process_state/app_state/app_state.h"
-#include "process_state/worker_state/worker_state.h"
-
-#include "syscall/syscall.h"
 #include "system/logging.h"
 #include "system/passert.h"
+#include <zephyr/sys/slist.h>
 
-
-static EventServiceInfo *prv_get_state(void) {
-  PebbleTask task = pebble_task_get_current();
-  if (task == PebbleTask_App) {
-    return app_state_get_event_service_state();
-  } else if (task == PebbleTask_Worker) {
-    return worker_state_get_event_service_state();
-  } else if (task == PebbleTask_KernelMain) {
-    return kernel_applib_get_event_service_state();
-  } else {
-    WTF;
-  }
-}
+static sys_slist_t event_handlers_list = SYS_SLIST_STATIC_INIT(&event_handlers_list);
 
 static int event_service_comparator(EventServiceInfo *a, EventServiceInfo *b) {
   return (b->type - a->type);
 }
 
-bool event_service_filter(ListNode *node, void *tp) {
-  EventServiceInfo *info = (EventServiceInfo *)node;
-  uint32_t type = (uint32_t)tp;
-  return (info->type == type);
-}
-
 static void do_handle(EventServiceInfo *info, PebbleEvent *e) {
-  PBL_ASSERTN(info->handler != NULL);
-  info->handler(e, info->context);
+  if (info->handler) {
+    info->handler(e, info->context);
+  }
 }
 
-void event_service_client_subscribe(EventServiceInfo *handler) {
-  EventServiceInfo *state = prv_get_state();
-  ListNode *list = &state->list_node;
-  if (list_contains(list, &handler->list_node)) {
-    PBL_LOG(LOG_LEVEL_DEBUG, "Event service handler already subscribed");
+void event_service_client_subscribe(EventServiceInfo *service_info) {
+  if (!service_info) {
     return;
   }
-  // Add to handlers list
-  list_sorted_add(list, &handler->list_node, (Comparator)event_service_comparator, true);
 
-  sys_event_service_client_subscribe(handler);
+  // Add the service info to the handlers list
+  sys_slist_append(&event_handlers_list, &service_info->list_node);
 }
 
-void event_service_client_unsubscribe(EventServiceInfo *handler) {
-  EventServiceInfo *state = prv_get_state();
-  ListNode *list = &state->list_node;
-  if (!list_contains(list, &handler->list_node)) {
-    PBL_LOG(LOG_LEVEL_DEBUG, "Event service handler not subscribed");
+void event_service_client_unsubscribe(EventServiceInfo *service_info) {
+  if (!service_info) {
     return;
   }
-  sys_event_service_client_unsubscribe(state, handler);
+
+  // Remove the service info from the handlers list
+  sys_slist_find_and_remove(&event_handlers_list, &service_info->list_node);
 }
 
 void event_service_client_handle_event(PebbleEvent *e) {
-  EventServiceInfo *state = prv_get_state();
-  const uintptr_t type = e->type;
-  // find the first callback
-  ListNode *handler = list_find(&state->list_node, event_service_filter, (void *) type);
-  while (handler) {
-    // find the next callback before we call the current one, because the CB may alter the list
-    ListNode *next_handler = list_find_next(handler, event_service_filter, false, (void *) type);
-    do_handle((EventServiceInfo *)handler, e);
-    handler = next_handler;
+  if (!e) {
+    return;
   }
 
-  sys_event_service_cleanup(e);
+  // Iterate through all handlers and call those matching the event type
+  struct sys_snode *node;
+  sys_slist_for_each_node(&event_handlers_list, node) {
+    EventServiceInfo *info = CONTAINER_OF(node, EventServiceInfo, list_node);
+    if (info->type == e->type) {
+      do_handle(info, e);
+    }
+  }
+}
+
+bool event_service_filter(sys_snode_t *node, void *tp) {
+  if (!node || !tp) {
+    return false;
+  }
+
+  EventServiceInfo *info = CONTAINER_OF(node, EventServiceInfo, list_node);
+  PebbleEventType *event_type = (PebbleEventType *)tp;
+
+  return (info->type == *event_type);
 }

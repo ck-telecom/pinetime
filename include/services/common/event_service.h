@@ -4,7 +4,7 @@
 #pragma once
 
 #include "kernel/events.h"
-#include "process_management/app_manager.h"
+//#include "process_management/app_manager.h"
 
 typedef void (*EventServiceAddSubscriberCallback)(PebbleTask task);
 typedef void (*EventServiceRemoveSubscriberCallback)(PebbleTask task);

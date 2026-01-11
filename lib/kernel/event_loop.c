@@ -76,7 +76,7 @@
 //#include "shell/shell_event_loop.h"
 //#include "shell/system_app_state_machine.h"
 //#include "system/bootbits.h"
-//#include "system/logging.h"
+#include "system/logging.h"
 //#include "system/passert.h"
 //#include "system/reset.h"
 //#include "system/testinfra.h"
@@ -119,5 +119,11 @@ void launcher_cancel_force_quit(void) {
 void launcher_main_loop(void) {
   //PBL_LOG(LOG_LEVEL_ALWAYS, "Starting Launcher");
 
+  while (1) {
+    // We make this PebbleEvent static to save stack space
+    static PebbleEvent e;
+    if (event_take_timeout(&e, 1000)) {
+    }
+  }
   __builtin_unreachable();
 }

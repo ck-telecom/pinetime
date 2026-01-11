@@ -131,21 +131,21 @@ typedef enum {
   PEBBLE_NUM_EVENTS
 } PebbleEventType;
 
-//typedef struct PACKED { // 9 bytes
+//typedef struct __PACKED { // 9 bytes
 //  AppOutboxSentHandler sent_handler;
 //  void *cb_ctx;
 //  AppOutboxStatus status:8;
 //} PebbleAppOutboxSentEvent;
 //
-//typedef struct PACKED { // 1 byte
+//typedef struct __PACKED { // 1 byte
 //  bool is_active; //<! ANCS has become active or has become inactive
 //} PebbleAncsChangedEvent;
 //
-//typedef struct PACKED { // 1 byte
+//typedef struct __PACKED { // 1 byte
 //  bool is_active; //<! do not disturb has become active or has become inactive
 //} PebbleDoNotDisturbEvent;
 //
-//typedef struct PACKED { // 1 byte?
+//typedef struct __PACKED { // 1 byte?
 //  ButtonId button_id;
 //} PebbleButtonEvent;
 //
@@ -168,7 +168,7 @@ typedef enum {
 //  PhoneCallSource_ANCS,
 //} PhoneCallSource;
 //
-//typedef struct PACKED PebblePhoneEvent { // 9 bytes
+//typedef struct __PACKED PebblePhoneEvent { // 9 bytes
 //  PhoneEventType type:6;
 //  PhoneCallSource source:2;
 //  uint32_t call_identifier;
@@ -182,7 +182,7 @@ typedef enum {
 //  NotificationActionResult
 //} PebbleSysNotificationType;
 //
-//typedef struct PACKED { // 6 bytes
+//typedef struct __PACKED { // 6 bytes
 //  PebbleSysNotificationType type:8;
 //  union {
 //    Uuid *notification_id;
@@ -191,11 +191,11 @@ typedef enum {
 //  };
 //} PebbleSysNotificationEvent;
 //
-//typedef struct PACKED {   // 4 bytes
+//typedef struct __PACKED {   // 4 bytes
 //  time_t tick_time; //!< Needs to be converted to 'struct tm' in the event service handler
 //} PebbleTickEvent;
 //
-//typedef struct PACKED { // 4 bytes
+//typedef struct __PACKED { // 4 bytes
 //  uint32_t error_code;
 //} PebblePanicEvent;
 //
@@ -208,7 +208,7 @@ typedef enum {
 //  PebbleMediaEventTypeTrackPosChanged,
 //} PebbleMediaEventType;
 //
-//typedef struct PACKED { // 2 bytes
+//typedef struct __PACKED { // 2 bytes
 //  PebbleMediaEventType type;
 //  union {
 //    MusicPlayState playback_state;
@@ -228,7 +228,7 @@ typedef enum {
 //  char *confirmation_token;
 //} PebbleBluetoothPairingConfirmationInfo;
 //
-//typedef struct PACKED { // 9 bytes
+//typedef struct __PACKED { // 9 bytes
 //  const PairingUserConfirmationCtx *ctx;
 //  union {
 //    //! Valid if type is PebbleBluetoothPairEventTypePairingUserConfirmation
@@ -245,20 +245,20 @@ typedef enum {
 //} PebbleBluetoothConnectionEventState;
 //
 //  // FIXME: This event muddles classic + LE connection events for the phone.
-//typedef struct PACKED { // 9 bytes
+//typedef struct __PACKED { // 9 bytes
 //  PebbleBluetoothConnectionEventState state:1;
 //  bool is_ble:1;
 //  BTDeviceInternal device;
 //} PebbleBluetoothConnectionEvent;
 //
-//typedef struct PACKED { // 9 bytes
+//typedef struct __PACKED { // 9 bytes
 //  uint8_t hci_reason;
 //  BTBondingID bonding_id;
 //  uint64_t bt_device_bits:50;
 //  bool connected:1;
 //} PebbleBLEConnectionEvent;
 //
-//typedef struct PACKED { // 4 bytes
+//typedef struct __PACKED { // 4 bytes
 //  int subscription_count;
 //} PebbleBLEHRMSharingStateUpdatedEvent;
 //
@@ -274,7 +274,7 @@ typedef enum {
 //  PebbleBLEGATTClientEventTypeNum,
 //} PebbleBLEGATTClientEventType;
 //
-//typedef struct PACKED { // 9 bytes
+//typedef struct __PACKED { // 9 bytes
 //  uintptr_t object_ref;
 //  union {
 //    uint16_t value_length;
@@ -326,7 +326,7 @@ typedef enum {
 //  };
 //} PebbleBLEGATTClientServiceEventInfo;
 //
-//typedef struct PACKED { // 9 bytes
+//typedef struct __PACKED { // 9 bytes
 //  PebbleBLEGATTClientServiceEventInfo *info;
 //  uint64_t rsvd:34;
 //
@@ -343,7 +343,7 @@ typedef enum {
 //
 
 //
-//typedef struct PACKED { // 3 byte?
+//typedef struct __PACKED { // 3 byte?
 //  bool airplane;
 //  bool enabled;
 //  BtCtlModeOverride override;
@@ -357,7 +357,7 @@ typedef enum {
 //  PebblePutBytesEventTypeInitTimeout,
 //} PebblePutBytesEventType;
 //
-//typedef struct PACKED { // 8 bytes
+//typedef struct __PACKED { // 8 bytes
 //  PebblePutBytesEventType type:8;
 //  uint8_t progress_percent; // the percent complete for the current PB transfer
 //  PutBytesObjectType object_type:7;
@@ -371,33 +371,33 @@ typedef enum {
 //  };
 //} PebblePutBytesEvent;
 //
-//typedef struct PACKED { // 1 bytes
+//typedef struct __PACKED { // 1 bytes
 //  PreciseBatteryChargeState new_state;
 //} PebbleBatteryStateChangeEvent;
 //
-//typedef struct PACKED { // 1 byte
+//typedef struct __PACKED { // 1 byte
 //  bool is_connected;
 //} PebbleBatteryConnectionEvent;
 //
-//typedef struct PACKED { // 5 bytes
+//typedef struct __PACKED { // 5 bytes
 //  int32_t magnetic_heading;
 //  uint8_t calib_status;
 //} PebbleCompassDataEvent;
 //
-//typedef struct PACKED { // 5 bytes
+//typedef struct __PACKED { // 5 bytes
 //  IMUCoordinateAxis axis;
 //  int32_t direction;
 //} PebbleAccelTapEvent;
 //
 ////! This is fired when a PP comm session is opened or closed
-//typedef struct PACKED PebbleCommSessionEvent { // 1 byte
+//typedef struct __PACKED PebbleCommSessionEvent { // 1 byte
 //  //! indicates whether the we are connecting or disconnecting
 //  bool is_open:1;
 //  //! True if the pebble app has connected & false if a third-party app has connected
 //  bool is_system:1;
 //} PebbleCommSessionEvent;
 //
-//typedef struct PACKED { // 1 bytes
+//typedef struct __PACKED { // 1 bytes
 //  RemoteOS os;
 //} PebbleRemoteAppInfoEvent;
 //
@@ -410,7 +410,7 @@ typedef enum {
 //  PebbleSystemMessageFirmwareOutOfDate,
 //} PebbleSystemMessageEventType;
 //
-//typedef struct PACKED { // 1 byte
+//typedef struct __PACKED { // 1 byte
 //  PebbleSystemMessageEventType type;
 //  uint32_t bytes_transferred;
 //  uint32_t total_transfer_size;
@@ -423,54 +423,54 @@ typedef enum {
 //  WakeupInfo wakeup;
 //} PebbleLaunchAppEventExtended;
 //
-//typedef struct PACKED { // 8 bytes
+//typedef struct __PACKED { // 8 bytes
 //  AppInstallId id;
 //  PebbleLaunchAppEventExtended *data;
 //} PebbleLaunchAppEvent;
 //
-//typedef struct PACKED { // 8 bytes
+//typedef struct __PACKED { // 8 bytes
 //  time_t alarm_time; //!< Needs to be converted to 'struct tm' in the event service handler
 //  const char *alarm_label;
 //} PebbleAlarmClockEvent;
 
 typedef void (*CallbackEventCallback)(void *data);
 
-typedef struct PACKED { // 8 bytes
+typedef struct __PACKED { // 8 bytes
   CallbackEventCallback callback;
   void *data;
 } PebbleCallbackEvent;
 
-//typedef struct PACKED { // 4 bytes
+//typedef struct __PACKED { // 4 bytes
 //  void* data;
 //} PebbleNewAppMessageEvent;
-//
-//typedef struct PACKED { // 7 bytes
-//  bool subscribe;
-//  PebbleTask task:8;
-//  PebbleEventType event_type;
-//  void *event_queue;
-//} PebbleSubscriptionEvent;
-//
-//typedef struct PACKED { // 2 bytes
+
+typedef struct __PACKED { // 7 bytes
+  bool subscribe;
+  PebbleTask task:8;
+  PebbleEventType event_type;
+  void *event_queue;
+} PebbleSubscriptionEvent;
+
+//typedef struct __PACKED { // 2 bytes
 //  bool gracefully;
 //  PebbleTask task;
 //} PebbleKillEvent;
 //
-//typedef struct PACKED { // 1 byte
+//typedef struct __PACKED { // 1 byte
 //  bool in_focus;
 //} PebbleAppFocusEvent;
 //
-//typedef struct PACKED { // 9 bytes
+//typedef struct __PACKED { // 9 bytes
 //  uint8_t  type;                // service event type
 //  uint16_t  service_index;      // service index
 //  PluginEventData data;
 //} PebblePluginServiceEvent;
 //
-//typedef struct PACKED { // 8 bytes
+//typedef struct __PACKED { // 8 bytes
 //  WakeupInfo wakeup_info;
 //} PebbleWakeupEvent;
 //
-//typedef struct PACKED { // 7 bytes
+//typedef struct __PACKED { // 7 bytes
 //  BlobDBId db_id;
 //  BlobDBEventType type;
 //  uint8_t *key;
@@ -489,13 +489,13 @@ typedef struct PACKED { // 8 bytes
 //  char sentence[];
 //} PebbleVoiceServiceEventData;
 //
-//typedef struct PACKED { // 6 bytes
+//typedef struct __PACKED { // 6 bytes
 //  VoiceEventType type:8;
 //  VoiceStatus status:8;
 //  PebbleVoiceServiceEventData *data;
 //} PebbleVoiceServiceEvent;
 //
-//typedef struct PACKED { // 9 bytes
+//typedef struct __PACKED { // 9 bytes
 //  DictationSessionStatus result;
 //  time_t timestamp;
 //  char *text;
@@ -509,7 +509,7 @@ typedef struct PACKED { // 8 bytes
 //  AppFetchEventTypeError,
 //} AppFetchEventType;
 //
-//typedef struct PACKED { // 6 bytes
+//typedef struct __PACKED { // 6 bytes
 //  AppFetchEventType type;
 //  AppInstallId id;
 //  union {
@@ -518,7 +518,7 @@ typedef struct PACKED { // 8 bytes
 //  };
 //} PebbleAppFetchEvent;
 //
-//typedef struct PACKED { // 9 bytes
+//typedef struct __PACKED { // 9 bytes
 //  AppInstallId id;
 //  bool with_ui;
 //  AppFetchUIArgs *fetch_args; //! NULL when with_ui is false, required otherwise
@@ -534,7 +534,7 @@ typedef struct PACKED { // 8 bytes
 //  DebugInfoStateFinished,
 //} DebugInfoEventState;
 //
-//typedef struct PACKED { // 2 bytes
+//typedef struct __PACKED { // 2 bytes
 //  DebugInfoEventSource source;
 //  DebugInfoEventState state;
 //} PebbleGatherDebugInfoEvent;
@@ -545,17 +545,17 @@ typedef struct PACKED { // 8 bytes
 //  ReminderUpdated,
 //} ReminderEventType;
 //
-//typedef struct PACKED { // 4 bytes
+//typedef struct __PACKED { // 4 bytes
 //  ReminderEventType type;
 //  ReminderId *reminder_id;
 //} PebbleReminderEvent;
 //
-//typedef struct PACKED { // 9 bytes
+//typedef struct __PACKED { // 9 bytes
 //  HealthEventData data;
 //  HealthEventType type:8;     // At the end so that data is word aligned.
 //} PebbleHealthEvent;
 //
-//typedef struct PACKED { // 1 byte
+//typedef struct __PACKED { // 1 byte
 //  bool is_event_ongoing;
 //} PebbleCalendarEvent;
 //
@@ -566,7 +566,7 @@ typedef struct PACKED { // 8 bytes
 //  SmartstrapNotifyEvent
 //} SmartstrapEventType;
 //
-//typedef struct PACKED { // 9 bytes
+//typedef struct __PACKED { // 9 bytes
 //  SmartstrapEventType type:4;
 //  SmartstrapProfile profile:4;
 //  SmartstrapResult result:8;
@@ -577,7 +577,7 @@ typedef struct PACKED { // 8 bytes
 //  };
 //} PebbleSmartstrapEvent;
 //
-//typedef struct PACKED { // 9 bytes
+//typedef struct __PACKED { // 9 bytes
 //  int utc_time_delta;
 //  int gmt_offset_delta;
 //  bool dst_changed;
@@ -589,12 +589,12 @@ typedef struct PACKED { // 8 bytes
 //  PebbleTouchEvent_PalmDetected
 //} PebbleTouchEventType;
 //
-//typedef struct PACKED { // 2 bytes
+//typedef struct __PACKED { // 2 bytes
 //  PebbleTouchEventType type:8;
 //  TouchIdx touch_idx;
 //} PebbleTouchEvent;
 //
-//typedef struct PACKED { // 8 bytes
+//typedef struct __PACKED { // 8 bytes
 //  PebbleProtocolCapabilities flags_diff;
 //} PebbleCapabilitiesChangedEvent;
 //
@@ -604,7 +604,7 @@ typedef struct PACKED { // 8 bytes
 //  WeatherEventType_WeatherOrderChanged,
 //} WeatherEventType;
 //
-//typedef struct PACKED PebbleWeatherEvent {
+//typedef struct __PACKED PebbleWeatherEvent {
 //  WeatherEventType type:8;
 //} PebbleWeatherEvent;
 //
@@ -648,7 +648,7 @@ typedef struct PACKED { // 8 bytes
 //  HRMEvent_SubscriptionExpiring
 //} HRMEventType;
 //
-//typedef struct PACKED PebbleHRMEvent { // 5 bytes
+//typedef struct __PACKED PebbleHRMEvent { // 5 bytes
 //  HRMEventType event_type;
 //  union {
 //    HRMBPMData bpm;
@@ -674,7 +674,7 @@ typedef struct PACKED { // 8 bytes
 //  AnimationProgress progress;
 //} UnobstructedAreaEventData;
 //
-//typedef struct PACKED {
+//typedef struct __PACKED {
 //  int16_t current_y;
 //  int16_t final_y;
 //  AnimationProgress progress;
@@ -686,11 +686,11 @@ typedef struct PACKED { // 8 bytes
 //               "PebbleUnobstructedAreaEvent size mismatch.");
 //#endif
 //
-//typedef struct PACKED PebbleAppGlanceEvent {
+//typedef struct __PACKED PebbleAppGlanceEvent {
 //  Uuid *app_uuid;
 //} PebbleAppGlanceEvent;
 //
-//typedef struct PACKED {
+//typedef struct __PACKED {
 //  TimelineItemId *item_id;
 //  TimelinePeekTimeType time_type:8;
 //  uint8_t num_concurrent;
@@ -709,7 +709,7 @@ typedef struct PACKED { // 8 bytes
 //  PebbleAppCacehEventNum
 //} PebbleAppCacheEventType;
 //
-//typedef struct PACKED PebbleAppCacheEvent {
+//typedef struct __PACKED PebbleAppCacheEvent {
 //  PebbleAppCacheEventType cache_event_type:8;
 //  AppInstallId install_id;
 //} PebbleAppCacheEvent;
@@ -726,7 +726,7 @@ typedef struct PACKED { // 8 bytes
 //  PebbleActivityEventNum
 //} PebbleActivityEventType;
 //
-//typedef struct PACKED PebbleActivityEvent {
+//typedef struct __PACKED PebbleActivityEvent {
 //  PebbleActivityEventType type:8;
 //} PebbleActivityEvent;
 //
@@ -741,7 +741,6 @@ typedef enum PebbleWorkoutEventType {
 typedef struct PebbleWorkoutEvent {
   PebbleWorkoutEventType type;
 } PebbleWorkoutEvent;
-
 
 typedef struct __PACKED {
   union __PACKED {
