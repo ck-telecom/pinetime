@@ -4,10 +4,6 @@
 This project try to port PebbleOS to Zephyr
 
 #### Hardware
-PineTime(pinetime_devkit0)
-
-Pebble Duo 2(p2d)
-
 Pebble Time 2(pt2)
 
 Pebble Round 2(pr2)
@@ -22,14 +18,15 @@ cd pinetime && west update
 
 #### Build
 ```
-cd pinetime/app
+make sure in directory pinetime
 
-west build -p auto -b pinetime_devkit0 .
+west build -p -b pt2 app
 ```
 
 #### Flash
 ```
-west flash
+west flash or
+west flash --port=<your_serial_port>
 ```
 
 #### Debug
