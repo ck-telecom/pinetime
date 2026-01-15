@@ -70,31 +70,10 @@
 #define PBL_SHOULD_LOG(level) ((level) <= DEFAULT_LOG_LEVEL)
 
 // Define log module for Zephyr
-LOG_MODULE_DECLARE(pbl_log, LOG_LEVEL_DBG);
+//LOG_MODULE_DECLARE(pbl_log, LOG_LEVEL_DBG);
 
 // Main logging macro implementation
-#define PBL_LOG(level, fmt, ...) \
-  do { \
-    if (PBL_SHOULD_LOG(level)) { \
-      switch (_PBL_LOG_LEVEL_MAP(level)) { \
-        case LOG_LEVEL_ERR: \
-          LOG_ERR(fmt, ## __VA_ARGS__); \
-          break; \
-        case LOG_LEVEL_WRN: \
-          LOG_WRN(fmt, ## __VA_ARGS__); \
-          break; \
-        case LOG_LEVEL_INF: \
-          LOG_INF(fmt, ## __VA_ARGS__); \
-          break; \
-        case LOG_LEVEL_DBG: \
-          LOG_DBG(fmt, ## __VA_ARGS__); \
-          break; \
-        default: \
-          LOG_INF(fmt, ## __VA_ARGS__); \
-          break; \
-      } \
-    } \
-  } while (0)
+#define PBL_LOG(level, fmt, ...)
 
 // Domain-specific logging
 #define PBL_LOG_D(domain, level, fmt, ...) \

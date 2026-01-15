@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: 2024 Google LLC */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-#include "pebble_tasks.h"
+#include "kernel/pebble_tasks.h"
 
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
@@ -95,7 +95,8 @@ k_tid_t pebble_task_get_handle_for_task(PebbleTask task) {
 }
 
 static uint16_t prv_task_get_stack_free(PebbleTask task) {
-  // Not implemented in Zephyr port
+  // Simplified implementation for Zephyr
+  // We don't have an accurate way to get free stack space in Zephyr
   return 0;
 }
 
@@ -110,12 +111,14 @@ void analytics_external_collect_stack_free(void) {
   // Not implemented in Zephyr port
 }
 
-QueueHandle_t pebble_task_get_to_queue(PebbleTask task) {
+struct k_msgq* pebble_task_get_to_queue(PebbleTask task) {
   // This function returns the queue for sending events to the given task
   // In our Zephyr implementation, we map this to the appropriate event queue
   switch (task) {
     case PebbleTask_KernelMain:
-      return event_get_to_kernel_queue(pebble_task_get_current());
+      // event_get_to_kernel_queue() is not implemented yet in Zephyr port
+      // Return NULL for now
+      return NULL;
     case PebbleTask_Worker:
       // Worker task queue will be implemented later
       return NULL;
@@ -130,80 +133,33 @@ QueueHandle_t pebble_task_get_to_queue(PebbleTask task) {
   }
 }
 
-// TaskParameters_t is assumed to be a FreeRTOS structure - we'll provide a simplified implementation
-// that extracts the necessary fields for Zephyr's k_thread_create
-void pebble_task_create(PebbleTask pebble_task, void *task_params, k_tid_t *handle) {
-  if (task_params == NULL) {
-    printk("pebble_task_create: task_params is NULL\n");
-    return;
+void pebble_task_create(PebbleTask pebble_task, TaskParameters_t *task_params, k_tid_t *handle) {
+  // TaskParameters_t is defined as void* in the header, so we can't access its members directly
+  // For now, we'll implement a simplified version that creates a thread with default parameters
+  printk("pebble_task_create: Not fully implemented\n");
+
+  // We need more information to create a proper thread, but for now we'll just return NULL
+  if (handle != NULL) {
+    *handle = NULL;
   }
 
-  TaskParameters_t *params = (TaskParameters_t *)task_params;
-  k_tid_t thread_id;
+    k_tid_t tid = k_thread_create(&task_params->thread_data, task_params->stack,
+        task_params->stack_size, task_params->func,
+        task_params->arg,
+        NULL, NULL,
+        task_params->prio,
+        0,
+        K_NO_WAIT);
 
-  // Map FreeRTOS priority to Zephyr priority
-  // FreeRTOS: higher number = higher priority
-  // Zephyr: lower number = higher priority (0 is highest, K_PRIO_COOP(15) is lowest for cooperative threads)
-  int zephyr_prio = K_PRIO_COOP(10); // Default priority
-  if (params->uxPriority != 0) {
-    // Extract priority value without privilege bit
-    UBaseType_t freertos_prio = params->uxPriority & ~portPRIVILEGE_BIT;
-    // Map 0-31 to Zephyr cooperative priorities (15-0)
-    zephyr_prio = K_PRIO_COOP(15 - (freertos_prio * 15) / 31);
-  }
+//    if (task_params->name) {
+//      k_thread_name_set(tid, task_params->name);
+//    }
 
-  // Create thread using Zephyr API
-  // Note: In Zephyr, stack size is in bytes, not words
-  // We'll assume that usStackDepth is in 4-byte words
-  size_t stack_size = params->usStackDepth * 4;
-
-  // If stack buffer is provided, use it; otherwise, let Zephyr allocate stack
-  if (params->puxStackBuffer != NULL) {
-    // Use provided stack buffer
-    thread_id = k_thread_create(
-      NULL, // No need for thread control block pointer in Zephyr
-      params->puxStackBuffer, // Stack buffer
-      stack_size, // Stack size in bytes
-      (k_thread_entry_t)params->pvTaskCode, // Thread entry function
-      params->pvParameters, // Task parameters
-      NULL,
-      NULL,
-      zephyr_prio, // Priority
-      0, // No thread options
-      K_NO_WAIT // Start immediately
-    );
-  } else {
-    // Let Zephyr allocate stack
-    thread_id = k_thread_create(
-      NULL, // No need for thread control block pointer in Zephyr
-      NULL, // No stack buffer provided, Zephyr will allocate
-      stack_size, // Stack size in bytes
-      (k_thread_entry_t)params->pvTaskCode, // Thread entry function
-      params->pvParameters, // Task parameters
-      NULL,
-      NULL,
-      zephyr_prio, // Priority
-      0, // No thread options
-      K_NO_WAIT // Start immediately
-    );
-  }
-
-  // Register the task
-  if (thread_id != NULL) {
-    // Set thread name if provided
-    if (params->pcName != NULL) {
-      k_thread_name_set(thread_id, params->pcName);
+    if (handle) {
+      *handle = tid;
     }
 
-    pebble_task_register(pebble_task, thread_id);
-
-    // Return thread handle if requested
-    if (handle != NULL) {
-      *handle = thread_id;
-    }
-  } else {
-    printk("pebble_task_create: Failed to create thread %s\n", params->pcName);
-  }
+    prv_task_register(pebble_task, tid);
 }
 
 void pebble_task_configure_idle_task(void) {

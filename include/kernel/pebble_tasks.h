@@ -5,9 +5,15 @@
 
 #include <zephyr/kernel.h>
 
-// Define FreeRTOS types for Zephyr compatibility
-typedef void *QueueHandle_t;
-typedef void *TaskParameters_t;
+typedef struct TaskParameters_t {
+  struct k_thread thread_data;
+  char *name;
+  k_thread_stack_t *stack;
+  uint32_t stack_size;
+  void (*func)(void *, void *, void *);
+  void *arg;
+  uint32_t prio;
+} TaskParameters_t;
 
 //! This is an enumeration of different tasks we've had in our system. Please don't rearrange
 //! these numbers! For example, the value of PebbleTask_Timers is hardcoded into our syscall
@@ -53,9 +59,9 @@ k_tid_t pebble_task_get_handle_for_task(PebbleTask task);
 void pebble_task_suspend(PebbleTask task);
 
 //! @return The queue handle to send events to the given task.
-QueueHandle_t pebble_task_get_to_queue(PebbleTask task);
+struct k_msgq* pebble_task_get_to_queue(PebbleTask task);
 
-void pebble_task_create(PebbleTask pebble_task, void *task_params,
+void pebble_task_create(PebbleTask pebble_task, TaskParameters_t *task_params,
                         k_tid_t *handle);
 
 void pebble_task_configure_idle_task(void);

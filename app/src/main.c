@@ -26,7 +26,8 @@ int main(void)
   printk("Hello Zephyr on PineTime!\n");
   printk("Initializing PebbleOS KernelMain task...\n");
 
-  //events_init();
+  // Initialize event system
+  events_init();
   //tick_init();
   //app_outbox_service_init();
 

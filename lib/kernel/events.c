@@ -5,11 +5,32 @@
 #include "kernel/pebble_tasks.h"
 #include "system/logging.h"
 
+// Use Kconfig values for queue sizes, with fallback defaults
+#ifndef CONFIG_PEBBLE_EVENT_QUEUE_SIZE
 #define MAX_KERNEL_EVENTS 32
-#define MAX_FROM_APP_EVENTS 10
-#define MAX_FROM_WORKER_EVENTS 5
-#define MAX_FROM_KERNEL_MAIN_EVENTS 14
+#else
+#define MAX_KERNEL_EVENTS CONFIG_PEBBLE_EVENT_QUEUE_SIZE
+#endif
 
+#ifndef CONFIG_PEBBLE_FROM_APP_QUEUE_SIZE
+#define MAX_FROM_APP_EVENTS 10
+#else
+#define MAX_FROM_APP_EVENTS CONFIG_PEBBLE_FROM_APP_QUEUE_SIZE
+#endif
+
+#ifndef CONFIG_PEBBLE_FROM_WORKER_QUEUE_SIZE
+#define MAX_FROM_WORKER_EVENTS 5
+#else
+#define MAX_FROM_WORKER_EVENTS CONFIG_PEBBLE_FROM_WORKER_QUEUE_SIZE
+#endif
+
+#ifndef CONFIG_PEBBLE_FROM_KERNEL_MAIN_QUEUE_SIZE
+#define MAX_FROM_KERNEL_MAIN_EVENTS 14
+#else
+#define MAX_FROM_KERNEL_MAIN_EVENTS CONFIG_PEBBLE_FROM_KERNEL_MAIN_QUEUE_SIZE
+#endif
+
+// Event queues for each task type
 K_MSGQ_DEFINE(s_kernel_event_queue, sizeof(PebbleEvent), MAX_KERNEL_EVENTS, 4);
 K_MSGQ_DEFINE(s_from_app_event_queue, sizeof(PebbleEvent), MAX_FROM_APP_EVENTS, 4);
 K_MSGQ_DEFINE(s_from_worker_event_queue, sizeof(PebbleEvent), MAX_FROM_WORKER_EVENTS, 4);
@@ -42,10 +63,19 @@ static void prv_queue_dump(struct k_msgq * queue) {
 void events_init(void) {
   // This assert is to make sure we don't accidentally bloat our PebbleEvent unecessarily. If you hit this
   // assert and you have a good reason for making the event bigger, feel free to relax the restriction.
-  //PBL_LOG(LOG_LEVEL_DEBUG, "PebbleEvent size is %u", sizeof(PebbleEvent));
-  // FIXME:
   _Static_assert(sizeof(PebbleEvent) <= 12,
                  "You made the PebbleEvent bigger! It should be no more than 12");
+
+  // Initialize event queues - Zephyr message queues are statically initialized via K_MSGQ_DEFINE
+  // No runtime initialization needed for the queues themselves
+
+  // Log initialization status
+  PBL_LOG(LOG_LEVEL_INFO, "Event system initialized");
+  PBL_LOG(LOG_LEVEL_DEBUG, "PebbleEvent size: %u bytes", sizeof(PebbleEvent));
+  PBL_LOG(LOG_LEVEL_DEBUG, "Kernel queue size: %d events", MAX_KERNEL_EVENTS);
+  PBL_LOG(LOG_LEVEL_DEBUG, "App queue size: %d events", MAX_FROM_APP_EVENTS);
+  PBL_LOG(LOG_LEVEL_DEBUG, "Worker queue size: %d events", MAX_FROM_WORKER_EVENTS);
+  PBL_LOG(LOG_LEVEL_DEBUG, "KernelMain queue size: %d events", MAX_FROM_KERNEL_MAIN_EVENTS);
 }
 
 //! Get the from_process queue for a specific task

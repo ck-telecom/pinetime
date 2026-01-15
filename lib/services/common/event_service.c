@@ -66,7 +66,7 @@ static void prv_event_service_subscribe(PebbleSubscriptionEvent *subscription) {
   ++service->num_subscribers;
 }
 
-static bool prv_event_service_send_event(QueueHandle_t queue, PebbleEvent *e) {
+static bool prv_event_service_send_event(struct k_msgq *queue, PebbleEvent *e) {
 }
 
 void event_service_system_init(void) {
