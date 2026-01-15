@@ -6,6 +6,9 @@
 #include "system/passert.h"
 
 #include "kernel/events.h"
+#include <zephyr/kernel.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct {
   int num_subscribers;
@@ -23,15 +26,11 @@ static void prv_event_service_unsubscribe(PebbleSubscriptionEvent *subscription)
 
   if (s_event_services[subscription->event_type] == NULL) {
     // service does not exist
-    //PBL_LOG(LOG_LEVEL_WARNING, "Attempted to unsubscribe from %d, no service found",
-    //    subscription->event_type);
     return;
   }
 
   if (service->subscribers[subscription->task] == NULL) {
     // not subscribed
-    //PBL_LOG(LOG_LEVEL_WARNING, "Attempted to unsubscribe from %d, not subscribed",
-    //    subscription->event_type);
     return;
   }
 
@@ -53,8 +52,7 @@ static void prv_event_service_subscribe(PebbleSubscriptionEvent *subscription) {
   }
 
   if (service->subscribers[subscription->task]) {
-    // already subscribed ?
-    //PBL_LOG(LOG_LEVEL_DEBUG, "already subscribed");
+    // already subscribed
     return;
   }
 
@@ -67,28 +65,52 @@ static void prv_event_service_subscribe(PebbleSubscriptionEvent *subscription) {
 }
 
 static bool prv_event_service_send_event(struct k_msgq *queue, PebbleEvent *e) {
+  if (queue == NULL) {
+    return false;
+  }
+
+  int ret = k_msgq_put(queue, e, K_NO_WAIT);
+  return (ret == 0);
 }
 
 void event_service_system_init(void) {
-
+  // Initialize all event service entries to NULL
+  for (int i = 0; i < PEBBLE_NUM_EVENTS; i++) {
+    s_event_services[i] = NULL;
+  }
 }
 
 void event_service_init(PebbleEventType type, EventServiceAddSubscriberCallback add_subscriber_callback,
     EventServiceRemoveSubscriberCallback remove_subscriber_callback) {
+  if (type >= PEBBLE_NUM_EVENTS) {
+    return;
+  }
 
+  if (s_event_services[type] == NULL) {
+    // Allocate memory for the new event service
+    s_event_services[type] = malloc(sizeof(EventServiceEntry));
+    if (s_event_services[type] == NULL) {
+      return;
+    }
+
+    // Initialize the new event service
+    s_event_services[type]->num_subscribers = 0;
+    for (int i = 0; i < NumPebbleTask; i++) {
+      s_event_services[type]->subscribers[i] = NULL;
+    }
+  }
+
+  // Update the callbacks
   s_event_services[type]->add_subscriber_callback = add_subscriber_callback;
   s_event_services[type]->remove_subscriber_callback = remove_subscriber_callback;
 }
 
 bool event_service_is_running(PebbleEventType event_type) {
-  if (s_event_services[event_type] == NULL) {
-    return (false);
-  }
-  if (s_event_services[event_type]->num_subscribers > 0) {
-    return (true);
+  if (event_type >= PEBBLE_NUM_EVENTS || s_event_services[event_type] == NULL) {
+    return false;
   }
 
-  return (false);
+  return (s_event_services[event_type]->num_subscribers > 0);
 }
 
 static bool prv_task_is_masked_out(PebbleEvent *e, PebbleTask task) {
@@ -97,29 +119,93 @@ static bool prv_task_is_masked_out(PebbleEvent *e, PebbleTask task) {
 }
 
 void event_service_handle_event(PebbleEvent *e) {
+  if (e == NULL) {
+    return;
+  }
+
+  if (e->type >= PEBBLE_NUM_EVENTS) {
+    return;
+  }
+
   EventServiceEntry *service = s_event_services[e->type];
   if (service == NULL) {
     return;
   }
 
+  // Send the event to all subscribed tasks
+  for (int i = 0; i < NumPebbleTask; i++) {
+    if (service->subscribers[i] != NULL && !prv_task_is_masked_out(e, (PebbleTask)i)) {
+      // Create a copy of the event to send to each subscriber
+      PebbleEvent event_copy;
+      memcpy(&event_copy, e, sizeof(PebbleEvent));
+      prv_event_service_send_event(service->subscribers[i], &event_copy);
+    }
+  }
 }
 
 void event_service_subscribe_from_kernel_main(PebbleSubscriptionEvent *subscription) {
+  if (subscription == NULL) {
+    return;
+  }
 
+  if (subscription->subscribe) {
+    prv_event_service_subscribe(subscription);
+  } else {
+    prv_event_service_unsubscribe(subscription);
+  }
 }
 
 void event_service_handle_subscription(PebbleSubscriptionEvent *subscription) {
+  if (subscription == NULL) {
+    return;
+  }
 
+  if (subscription->subscribe) {
+    prv_event_service_subscribe(subscription);
+  } else {
+    prv_event_service_unsubscribe(subscription);
+  }
 }
 
 void event_service_clear_process_subscriptions(PebbleTask task) {
+  if (task >= NumPebbleTask) {
+    return;
+  }
 
+  // Remove subscriptions for this task from all event services
+  for (int i = 0; i < PEBBLE_NUM_EVENTS; i++) {
+    EventServiceEntry *service = s_event_services[i];
+    if (service != NULL && service->subscribers[task] != NULL) {
+      PebbleSubscriptionEvent subscription = {
+        .subscribe = false,
+        .task = task,
+        .event_type = (PebbleEventType)i,
+        .event_queue = service->subscribers[task]
+      };
+      prv_event_service_unsubscribe(&subscription);
+    }
+  }
 }
 
 void* event_service_claim_buffer(PebbleEvent *e) {
+  if (e == NULL) {
+    return NULL;
+  }
 
+  void **buffer = event_get_buffer(e);
+  if (buffer != NULL && *buffer != NULL) {
+    // The buffer is already claimed or doesn't need to be claimed
+    return *buffer;
+  }
+
+  return NULL;
 }
 
 void event_service_free_claimed_buffer(void *ref) {
+  if (ref == NULL) {
+    return;
+  }
 
+  // Free the buffer if it was allocated by the event service
+  free(ref);
 }
