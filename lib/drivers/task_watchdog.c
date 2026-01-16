@@ -3,19 +3,14 @@
 
 #include "drivers/task_watchdog.h"
 
-#include "drivers/watchdog.h"
-#include "kernel/core_dump.h"
 #include "kernel/event_loop.h"
-#include "kernel/pebble_tasks.h"
-#include "process_management/app_manager.h"
-#include "services/common/analytics/analytics.h"
+
+
 #include "services/common/evented_timer.h"
 #include "services/common/system_task.h"
 #include "system/bootbits.h"
-#include "system/die.h"
 #include "system/logging.h"
 #include "system/passert.h"
-#include "util/size.h"
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -43,7 +38,7 @@ LOG_MODULE_DECLARE(task_watchdog, LOG_LEVEL_DBG);
 static EventedTimerID s_throttle_timer_id = EVENTED_TIMER_INVALID_ID;
 
 // Task watchdog channel IDs for each Pebble task
-static int s_task_wdt_channels[PebbleTask_Count] = { -1 };
+static int s_task_wdt_channels[NumPebbleTask] = { -1 };
 
 // Default task watchdog timeout in milliseconds
 #define TASK_WDT_DEFAULT_TIMEOUT_MS 5000
@@ -57,20 +52,6 @@ static void prv_app_task_throttle_end(void *data) {
 }
 
 static void prv_app_task_throttle_start(void) {
-  static char last_throttled_task[CONFIG_MAX_THREAD_NAME_LEN];
-  const char *curr_task = pebble_task_get_name(PebbleTask_App);
-
-  // if an app results in system throttling, log it at the INFO level at least
-  // once to aid in debug
-  if (strcmp(last_throttled_task, curr_task) != 0) {
-    strcpy(last_throttled_task, curr_task);
-    LOG_INF("Starting App Throttling for %s", curr_task);
-  } else {
-    LOG_DBG("Starting App Throttling for %s", curr_task);
-  }
-
-  analytics_inc(ANALYTICS_DEVICE_METRIC_APP_THROTTLED_COUNT, AnalyticsClient_System);
-
   // In Zephyr, we don't directly set thread priorities like in FreeRTOS
   // This function may need to be reimplemented based on Zephyr's thread management
 }
@@ -91,6 +72,7 @@ static void prv_system_task_starved_callback(void *data) {
 
 // Task watchdog timeout callback
 static void prv_task_wdt_timeout_callback(int channel_id, void *user_data) {
+#if 0
   PebbleTask task = (PebbleTask)(uintptr_t)user_data;
   const char *task_name = pebble_task_get_name(task);
 
@@ -118,6 +100,7 @@ static void prv_task_wdt_timeout_callback(int channel_id, void *user_data) {
 
   // If we're in a critical state, reset the system
   reset_due_to_software_failure();
+#endif
 }
 
 // ============================================================================================================
@@ -151,11 +134,11 @@ void task_watchdog_init(void) {
   LOG_INF("Task watchdog subsystem initialized");
 
   // Initialize watchdog channels for each task
-  for (int i = 0; i < PebbleTask_Count; i++) {
+  for (int i = 0; i < NumPebbleTask; i++) {
     PebbleTask task = (PebbleTask)i;
 
     // Skip invalid tasks
-    if (task == PebbleTask_Invalid) {
+    if (task == PebbleTask_Unknown) {
       continue;
     }
 
@@ -187,7 +170,7 @@ void task_watchdog_feed(void) {
 void task_watchdog_bit_set_all(void) {
 #if defined(CONFIG_TASK_WDT)
   // Feed all task watchdogs
-  for (int i = 0; i < PebbleTask_Count; i++) {
+  for (int i = 0; i < NumPebbleTask; i++) {
     if (s_task_wdt_channels[i] >= 0) {
       task_wdt_feed(s_task_wdt_channels[i]);
     }
@@ -197,7 +180,7 @@ void task_watchdog_bit_set_all(void) {
 
 void task_watchdog_bit_set(PebbleTask task) {
 #if defined(CONFIG_TASK_WDT)
-  if (task < PebbleTask_Count && s_task_wdt_channels[task] >= 0) {
+  if (task < NumPebbleTask && s_task_wdt_channels[task] >= 0) {
     task_wdt_feed(s_task_wdt_channels[task]);
     LOG_DBG("Fed task watchdog for %s (channel %d)",
            pebble_task_get_name(task), s_task_wdt_channels[task]);
@@ -211,7 +194,7 @@ bool task_watchdog_mask_get(PebbleTask task) {
 }
 
 void task_watchdog_mask_set(PebbleTask task) {
-  if (task < PebbleTask_Count && s_task_wdt_channels[task] < 0) {
+  if (task < NumPebbleTask && s_task_wdt_channels[task] < 0) {
     s_task_wdt_channels[task] = task_wdt_add(TASK_WDT_DEFAULT_TIMEOUT_MS,
                                           prv_task_wdt_timeout_callback,
                                           (void *)(uintptr_t)task);
@@ -227,7 +210,7 @@ void task_watchdog_mask_set(PebbleTask task) {
 }
 
 void task_watchdog_mask_clear(PebbleTask task) {
-  if (task < PebbleTask_Count && s_task_wdt_channels[task] >= 0) {
+  if (task < NumPebbleTask && s_task_wdt_channels[task] >= 0) {
     task_wdt_delete(s_task_wdt_channels[task]);
     s_task_wdt_channels[task] = -1;
     LOG_DBG("Cleared task watchdog channel %d for %s",
