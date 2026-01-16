@@ -3,3 +3,4 @@
 
 zephyr_library()
 zephyr_library_sources(stubs/battery.c)
+zephyr_library_sources(task_watchdog.c)

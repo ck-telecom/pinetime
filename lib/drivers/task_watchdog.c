@@ -9,7 +9,7 @@
 #include "kernel/pebble_tasks.h"
 #include "process_management/app_manager.h"
 #include "services/common/analytics/analytics.h"
-#include "services/common/new_timer/new_timer.h"
+#include "services/common/evented_timer.h"
 #include "services/common/system_task.h"
 #include "system/bootbits.h"
 #include "system/die.h"
@@ -40,7 +40,7 @@ LOG_MODULE_DECLARE(task_watchdog, LOG_LEVEL_DBG);
 #define APP_THROTTLE_TIME_MS 300
 
 // The App Throttle Timer
-static TimerID s_throttle_timer_id = TIMER_INVALID_ID;
+static EventedTimerID s_throttle_timer_id = EVENTED_TIMER_INVALID_ID;
 
 // Task watchdog channel IDs for each Pebble task
 static int s_task_wdt_channels[PebbleTask_Count] = { -1 };
@@ -84,7 +84,8 @@ static void prv_system_task_starved_callback(void *data) {
     // to give the worker some time.
     prv_app_task_throttle_start();
     // throttle the app task for APP_THROTTLE_TIME_MS to give the system task some runtime
-    new_timer_start(s_throttle_timer_id, APP_THROTTLE_TIME_MS, prv_app_task_throttle_end, NULL, 0);
+    s_throttle_timer_id = evented_timer_register_or_reschedule(
+        s_throttle_timer_id, APP_THROTTLE_TIME_MS, prv_app_task_throttle_end, NULL);
   }
 }
 
@@ -128,8 +129,7 @@ void task_watchdog_init(void) {
   int ret;
   const struct device *const hw_wdt_dev = DEVICE_DT_GET_OR_NULL(WDT_NODE);
 
-  // Initialize app throttling timer
-  s_throttle_timer_id = new_timer_create();
+  // Initialize app throttling timer (no need to create, evented_timer_register handles it)
 
 #ifdef CONFIG_TASK_WDT
   LOG_INF("Task watchdog subsystem initializing...");
@@ -211,31 +211,36 @@ bool task_watchdog_mask_get(PebbleTask task) {
 }
 
 void task_watchdog_mask_set(PebbleTask task) {
-  // In Zephyr task_wdt, this function is a no-op as all tasks are watched by default
-  // If we want to enable/disable watchdogs for specific tasks, we'd need to modify this
+  if (task < PebbleTask_Count && s_task_wdt_channels[task] < 0) {
+    s_task_wdt_channels[task] = task_wdt_add(TASK_WDT_DEFAULT_TIMEOUT_MS,
+                                          prv_task_wdt_timeout_callback,
+                                          (void *)(uintptr_t)task);
+    if (s_task_wdt_channels[task] >= 0) {
+      LOG_DBG("Added task watchdog channel %d for %s with timeout %d ms",
+             s_task_wdt_channels[task], pebble_task_get_name(task), TASK_WDT_DEFAULT_TIMEOUT_MS);
+    } else {
+      LOG_ERR("Failed to add task watchdog for %s: %d",
+             pebble_task_get_name(task), s_task_wdt_channels[task]);
+      s_task_wdt_channels[task] = -1;
+    }
+  }
 }
 
 void task_watchdog_mask_clear(PebbleTask task) {
-  // In Zephyr task_wdt, this function is a no-op as all tasks are watched by default
-  // If we want to enable/disable watchdogs for specific tasks, we'd need to modify this
+  if (task < PebbleTask_Count && s_task_wdt_channels[task] >= 0) {
+    task_wdt_delete(s_task_wdt_channels[task]);
+    s_task_wdt_channels[task] = -1;
+    LOG_DBG("Cleared task watchdog channel %d for %s",
+           s_task_wdt_channels[task], pebble_task_get_name(task));
+  }
 }
 
 void task_watchdog_pause(unsigned int seconds) {
-#if defined(CONFIG_TASK_WDT)
-  // Pause all task watchdogs by setting a very long timeout
-  // Note: Zephyr's task_wdt doesn't support dynamic timeout changes
-  // This function is kept for compatibility but doesn't change behavior
-  LOG_WRN("task_watchdog_pause not supported in Zephyr task_wdt");
-#endif
+  task_wdt_suspend();
 }
 
 void task_watchdog_resume(void) {
-#if defined(CONFIG_TASK_WDT)
-  // Resume all task watchdogs
-  // Note: Zephyr's task_wdt doesn't support dynamic timeout changes
-  // This function is kept for compatibility but just feeds the watchdogs
-  task_watchdog_bit_set_all();
-#endif
+  task_wdt_resume();
 }
 
 void task_watchdog_step_elapsed_time_ms(uint32_t elapsed_ms) {
