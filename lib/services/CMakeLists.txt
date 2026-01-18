@@ -5,4 +5,5 @@ zephyr_library()
 zephyr_library_sources(
     common/event_service.c
     common/event_service_client.c
+    common/system_task.c
 )
