@@ -1,0 +1,52 @@
+/**
+ * copyright (c) 2026 Qingsong Gou <gouqs@hotmail.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	chosen {
+	};
+
+};
+
+&pinctrl {
+	jdi_default: jdi_default {
+		group1 {
+			pinmux = <PA02_LCDC1_JDI_B2>,
+                     <PA03_LCDC1_JDI_B1>,
+                     <PA04_LCDC1_JDI_G1>,
+                     <PA05_LCDC1_JDI_R1>,
+                     <PA06_LCDC1_JDI_HST>,
+                     <PA07_LCDC1_JDI_ENB>,
+                     <PA08_LCDC1_JDI_VST>,
+                     <PA39_LCDC1_JDI_VCK>,
+                     <PA40_LCDC1_JDI_XRST>,
+                     <PA41_LCDC1_JDI_HCK>,
+                     <PA42_LCDC1_JDI_R2>,
+                     <PA43_LCDC1_JDI_G2>;
+			input-enable;
+			input-schmitt-enable;
+		};
+	};
+};
+
+&lcdc {
+	status = "okay";
+
+	jdi: jdi {
+		compatible = "sifli,sf32lb-jdi";
+		status = "okay";
+		pinctrl-0 = <&jdi_default>;
+		pinctrl-names = "default";
+		//interface-type = <0>; /* 0=Serial, 1=Parallel */
+
+		ls013b7dh03: ls013b7dh03 {
+			compatible = "jdi,ls013b7dh03";
+			width = <144>;
+			height = <168>;
+			/* vcom-gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>; */
+			/* disp-en-gpios = <&gpiob 0 GPIO_ACTIVE_HIGH>; */
+			//serial-vcom-inversion;
+		};
+	};
+};
