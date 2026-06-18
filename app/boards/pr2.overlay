@@ -1,0 +1,75 @@
+/*
+ * Copyright (c) 2026 Core Devices LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	chosen {
+		/* we are the bootloader */
+		zephyr,code-partition = &boot;
+
+		/* slots */
+		pb,slot0 = &slot0;
+		pb,slot1 = &slot1;
+		pb,prf = &prf;
+
+		/* buttons */
+		pb,btn-back = &btn_back;
+		pb,btn-up = &btn_up;
+		pb,btn-center = &btn_center;
+		pb,btn-down = &btn_down;
+
+		/* charger */
+		pb,charger = &npm1300_charger;
+
+		/* watchdog */
+		pb,wdt = &wdt;
+	};
+};
+
+&mpi2 {
+	flash@0 {
+		partitions {
+			/* define custom partition scheme */
+			/delete-node/ code@10000;
+
+			boot: partition@10000 {
+				label = "boot";
+				reg = <0x10000 DT_SIZE_K(64)>;
+			};
+
+			slot0: partition@20000 {
+				label = "slot0";
+				reg = <0x20000 DT_SIZE_K(3072)>;
+			};
+
+			slot1: partition@320000 {
+				label = "slot1";
+				reg = <0x320000 DT_SIZE_K(3072)>;
+			};
+
+			prf: partition@a20000 {
+				label = "prf";
+				reg = <0xa20000 DT_SIZE_K(576)>;
+			};
+		};
+	};
+};
+
+&wdt {
+	sifli,reset-all;
+};
+
+/* disable unused peripherals that would be automatically enabled */
+
+&i2c1 {
+	status = "disabled";
+};
+
+&i2c2 {
+	status = "disabled";
+};
+
+&npm1300_gpio {
+	status = "disabled";
+};
