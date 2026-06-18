@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <zephyr/dt-bindings/pwm/pwm.h>
+
 / {
 	chosen {
 	};
@@ -30,6 +32,10 @@
 	};
 };
 
+&atim_pwm {
+	status = "okay";
+};
+
 &lcdc {
 	status = "okay";
 
@@ -40,6 +46,10 @@
 		pinctrl-names = "default";
 		interface-type = <1>; /* 0=Serial, 1=Parallel */
 		clock-frequency = <2000000>;
+
+		vcom: vcom {
+			pwms = <&atim_pwm 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+		};
 
 		ls013b7dh03: ls013b7dh03 {
 			compatible = "jdi,ls013b7dh03";
