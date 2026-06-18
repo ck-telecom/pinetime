@@ -14,7 +14,7 @@ manifest:
     - name: zephyr
       remote: zephyrproject-rtos
       west-commands: scripts/west-commands.yml
-      revision: main
+      revision: 081303fe99de332bf76af1a897e9992d7d8577c6
       import:
         name-allowlist:
           - cmsis_6
