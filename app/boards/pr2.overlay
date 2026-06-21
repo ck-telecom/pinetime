@@ -57,7 +57,7 @@
 };
 
 &wdt {
-	sifli,reset-all;
+	//sifli,reset-all;
 };
 
 /* disable unused peripherals that would be automatically enabled */
