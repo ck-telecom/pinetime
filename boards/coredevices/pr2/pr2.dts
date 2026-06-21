@@ -219,7 +219,7 @@
 		pinctrl-names = "default";
 
 		/* LS013B7DH03 display on JDI bus */
-		display@0 {
+		display: ls013b {
 			compatible = "jdi,ls013b7dh03";
 			interface-type = <0>;
 			clock-frequency = <2000000>;

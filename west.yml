@@ -14,7 +14,7 @@ manifest:
 
   projects:
     - name: zephyr
-      remote: ck-telcom 
+      remote: ck-telecom
       west-commands: scripts/west-commands.yml
       revision: jdi
       import:
