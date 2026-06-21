@@ -209,3 +209,35 @@
 &wdt {
 	status = "okay";
 };
+
+&lcdc {
+       status = "okay";
+
+       jdi: jdi {
+               compatible = "sifli,sf32lb-jdi";
+               pinctrl-0 = <&lcdc1_jdi_default>;
+               pinctrl-names = "default";
+               interface-type = <0>;
+               clock-frequency = <2000000>;
+
+               /* LS013B7DH03 geometry: 144x168 mono memory LCD */
+               valid-columns = <144>;
+               valid-rows = <168>;
+               bank-col-head = <0>;
+               bank-col-tail = <0>;
+               bank-row-head = <0>;
+               bank-row-tail = <0>;
+               enb-start-col = <0>;
+               enb-end-col = <143>;
+
+               vcom {
+                       pwms = <&gpt_pwm0 0 PWM_MSEC(16) PWM_POLARITY_NORMAL>;
+               };
+
+               /* LS013B7DH03 display on JDI bus */
+               display@0 {
+                       compatible = "jdi,ls013b7dh03";
+                       reg = <0>;
+               };
+       };
+};
