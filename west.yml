@@ -9,12 +9,14 @@ manifest:
       url-base: https://github.com/zephyrproject-rtos
     - name: fwatch
       url-base: https://gitee.com/fwatch
+    - name: ck-telecom
+      url-base: https://github.com/ck-telecom
 
   projects:
     - name: zephyr
-      remote: zephyrproject-rtos
+      remote: ck-telcom 
       west-commands: scripts/west-commands.yml
-      revision: 081303fe99de332bf76af1a897e9992d7d8577c6
+      revision: jdi
       import:
         name-allowlist:
           - cmsis_6
