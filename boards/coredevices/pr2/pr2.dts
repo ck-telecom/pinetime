@@ -221,8 +221,8 @@
 		/* LS013B7DH03 display on JDI bus */
 		display: ls013b {
 			compatible = "jdi,ls013b7dh03";
-			interface-type = <0>;
-			clock-frequency = <2000000>;
+//			interface-type = <0>;
+//			clock-frequency = <2000000>;
 			width = <144>;
 			height = <168>;
 		};
