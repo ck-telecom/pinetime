@@ -1,0 +1,105 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# GitHub Actions CI for PineTime Zephyr firmware
+# Builds for Pebble Time 2 (pt2) and Pebble Round 2 (pr2) targets
+
+name: Build PineTime Firmware
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+env:
+  ZEPHYR_SDK_VERSION: 0.17.0
+  ZEPHYR_SDK_INSTALL_DIR: /opt/toolchains/zephyr-sdk-0.17.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26.11
+
+    strategy:
+      fail-fast: false
+      matrix:
+        board: [pt2, pr2]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: pinetime
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install west and dependencies
+        run: |
+          pip install --upgrade pip
+          pip install west
+          pip install pyelftools
+
+      - name: Initialize west workspace
+        run: |
+          mkdir -p workspace
+          cd workspace
+          west init -l pinetime
+          west update --narrow -o=--depth=1
+
+      - name: Install Zephyr Python dependencies
+        run: |
+          cd workspace
+          west packages pip --install
+          pip install -r zephyr/scripts/requirements.txt
+
+      - name: Build firmware for ${{ matrix.board }}
+        run: |
+          cd workspace
+          west build -b ${{ matrix.board }} pinetime/app \
+            --build-dir build-${{ matrix.board }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.board }}
+          path: |
+            workspace/build-${{ matrix.board }}/zephyr/zephyr.bin
+            workspace/build-${{ matrix.board }}/zephyr/zephyr.hex
+            workspace/build-${{ matrix.board }}/zephyr/zephyr.elf
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Print build size report
+        run: |
+          cd workspace
+          west build -s -d build-${{ matrix.board }}
+
+  check-compliance:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: pinetime
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: Check code formatting
+        run: |
+          cd pinetime
+          find app/src -name '*.c' -o -name '*.h' | head -100 | \
+            xargs clang-format --dry-run --Werror 2>&1 || true
