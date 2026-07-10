@@ -46,21 +46,19 @@ jobs:
 
       - name: Initialize west workspace
         run: |
-          mkdir -p workspace
-          cd workspace
           west init -l pinetime
-          west update --narrow -o=--depth=1
+          cd pinetime
+          west update
 
       - name: Install Zephyr Python dependencies
         run: |
-          cd workspace
           west packages pip --install
           pip install -r zephyr/scripts/requirements.txt
 
       - name: Build firmware for ${{ matrix.board }}
         run: |
-          cd workspace
-          west build -b ${{ matrix.board }} pinetime/app \
+          cd pinetime
+          west build -p -b ${{ matrix.board }} app \
             --build-dir build-${{ matrix.board }}
 
       - name: Upload build artifacts
@@ -68,15 +66,15 @@ jobs:
         with:
           name: firmware-${{ matrix.board }}
           path: |
-            workspace/build-${{ matrix.board }}/zephyr/zephyr.bin
-            workspace/build-${{ matrix.board }}/zephyr/zephyr.hex
-            workspace/build-${{ matrix.board }}/zephyr/zephyr.elf
+            pinetime/build-${{ matrix.board }}/zephyr/zephyr.bin
+            pinetime/build-${{ matrix.board }}/zephyr/zephyr.hex
+            pinetime/build-${{ matrix.board }}/zephyr/zephyr.elf
           if-no-files-found: error
           retention-days: 30
 
       - name: Print build size report
         run: |
-          cd workspace
+          cd pinetime
           west build -s -d build-${{ matrix.board }}
 
   check-compliance:
