@@ -43,22 +43,6 @@ jobs:
         run: |
           west build -p -b ${{ matrix.board }} app --build-dir build-${{ matrix.board }}
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: firmware-${{ matrix.board }}
-          path: |
-            pinetime/build-${{ matrix.board }}/zephyr/zephyr.bin
-            pinetime/build-${{ matrix.board }}/zephyr/zephyr.hex
-            pinetime/build-${{ matrix.board }}/zephyr/zephyr.elf
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Print build size report
-        run: |
-          cd pinetime
-          west build -s -d build-${{ matrix.board }}
-
   check-compliance:
     runs-on: ubuntu-latest
 
