@@ -14,9 +14,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    container:
-      image: ghcr.io/zephyrproject-rtos/ci:v0.26.11
-      options: '--entrypoint /bin/bash'
 
     strategy:
       fail-fast: false
