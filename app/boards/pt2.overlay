@@ -8,10 +8,6 @@
 	};
 
 	aliases {
-		retainedmem = &rtc_backup;
 	};
 };
 
-&rtc_backup {
-	status = "okay";
-};
