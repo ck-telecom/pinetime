@@ -11,15 +11,12 @@ on:
   pull_request:
     branches: [develop, main]
 
-env:
-  ZEPHYR_SDK_VERSION: 0.17.0
-  ZEPHYR_SDK_INSTALL_DIR: /opt/toolchains/zephyr-sdk-0.17.0
-
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26.11
+      options: '--entrypoint /bin/bash'
 
     strategy:
       fail-fast: false
@@ -27,7 +24,7 @@ jobs:
         board: [pt2, pr2]
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           path: pinetime
@@ -36,30 +33,18 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: 3.12
 
-      - name: Install west and dependencies
-        run: |
-          pip install --upgrade pip
-          pip install west
-          pip install pyelftools
-
-      - name: Initialize west workspace
-        run: |
-          west init -l pinetime
-          cd pinetime
-          west update
-
-      - name: Install Zephyr Python dependencies
-        run: |
-          west packages pip --install
-          pip install -r zephyr/scripts/requirements.txt
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: pinetime
+          toolchains: arm-zephyr-eabi
 
       - name: Build firmware for ${{ matrix.board }}
+        working-directory: pinetime
         run: |
-          cd pinetime
-          west build -p -b ${{ matrix.board }} app \
-            --build-dir build-${{ matrix.board }}
+          west build -p -b ${{ matrix.board }} app --build-dir build-${{ matrix.board }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -89,7 +74,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install clang-format
         run: |
