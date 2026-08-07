@@ -38,23 +38,4 @@
 			bias-pull-up;
 		};
 	};
-
-	jdi_default: jdi_default {
-		group1 {
-			pinmux = <PA02_LCDC1_JDI_B2>,
-				 <PA03_LCDC1_JDI_B1>,
-				 <PA04_LCDC1_JDI_G1>,
-				 <PA05_LCDC1_JDI_R1>,
-				 <PA06_LCDC1_JDI_HST>,
-				 <PA07_LCDC1_JDI_ENB>,
-				 <PA08_LCDC1_JDI_VST>,
-				 <PA39_LCDC1_JDI_VCK>,
-				 <PA40_LCDC1_JDI_XRST>,
-				 <PA41_LCDC1_JDI_HCK>,
-				 <PA42_LCDC1_JDI_R2>,
-				 <PA43_LCDC1_JDI_G2>;
-			input-enable;
-			input-schmitt-enable;
-		};
-	};
 };

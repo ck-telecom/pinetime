@@ -1,75 +1,112 @@
 /*
- * Copyright (c) 2026 Core Devices LLC
+ * Copyright (c) 2026 Qingsong Gou <gouqs@hotmail.com>
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <zephyr/dt-bindings/pwm/pwm.h>
+#include <zephyr/dt-bindings/pinctrl/sf32lb52x-pinctrl.h>
+
 / {
 	chosen {
-		/* we are the bootloader */
-		zephyr,code-partition = &boot;
+		zephyr,display = &ls013b7dh03;
+	};
 
-		/* slots */
-		pb,slot0 = &slot0;
-		pb,slot1 = &slot1;
-		pb,prf = &prf;
+	pwmleds {
+		compatible = "pwm-leds";
 
-		/* buttons */
-		pb,btn-back = &btn_back;
-		pb,btn-up = &btn_up;
-		pb,btn-center = &btn_center;
-		pb,btn-down = &btn_down;
+		pwm_led_backlight: pwm_led_backlight {
+			pwms = <&pwm0 0 PWM_MSEC(10) PWM_POLARITY_NORMAL>;
+		};
+	};
 
-		/* charger */
-		pb,charger = &npm1300_charger;
-
-		/* watchdog */
-		pb,wdt = &wdt;
+	aliases {
+		pwm-led0 = &pwm_led_backlight;
 	};
 };
 
-&mpi2 {
-	flash@0 {
-		partitions {
-			/* define custom partition scheme */
-			/delete-node/ code@10000;
+&pinctrl {
+	jdi_default: jdi_default {
+		group1 {
+			pinmux = <PA02_LCDC1_JDI_B2>,
+				 <PA03_LCDC1_JDI_B1>,
+				 <PA04_LCDC1_JDI_G1>,
+				 <PA05_LCDC1_JDI_R1>,
+				 <PA06_LCDC1_JDI_HST>,
+				 <PA07_LCDC1_JDI_ENB>,
+				 <PA08_LCDC1_JDI_VST>,
+				 <PA39_LCDC1_JDI_VCK>,
+				 <PA40_LCDC1_JDI_XRST>,
+				 <PA41_LCDC1_JDI_HCK>,
+				 <PA42_LCDC1_JDI_R2>,
+				 <PA43_LCDC1_JDI_G2>;
+			input-enable;
+			input-schmitt-enable;
+		};
+	};
 
-			boot: partition@10000 {
-				label = "boot";
-				reg = <0x10000 DT_SIZE_K(64)>;
-			};
+	pwm0_default: pwm0_default {
+		group1 {
+			pinmux = <PA01_GPTIM2_CH1>;
+		};
+	};
 
-			slot0: partition@20000 {
-				label = "slot0";
-				reg = <0x20000 DT_SIZE_K(3072)>;
-			};
-
-			slot1: partition@320000 {
-				label = "slot1";
-				reg = <0x320000 DT_SIZE_K(3072)>;
-			};
-
-			prf: partition@a20000 {
-				label = "prf";
-				reg = <0xa20000 DT_SIZE_K(576)>;
-			};
+	vcom_pwm_default: vcom_pwm_default {
+		group1 {
+			pinmux = <PA24_GPTIM1_CH1>, <PA25_GPTIM1_CH2>;
 		};
 	};
 };
 
-&wdt {
-	//sifli,reset-all;
+&gptim2 {
+	status = "okay";
+	sifli,prescaler = <23>;
+
+	pwm0: pwm {
+		status = "okay";
+		pinctrl-0 = <&pwm0_default>;
+		pinctrl-names = "default";
+	};
 };
 
-/* disable unused peripherals that would be automatically enabled */
+&gptim1 {
+	status = "okay";
+	sifli,prescaler = <2399>;
 
-&i2c1 {
-	status = "disabled";
+	pwm1: pwm {
+		status = "okay";
+		pinctrl-0 = <&vcom_pwm_default>;
+		pinctrl-names = "default";
+	};
 };
 
-&i2c2 {
-	status = "disabled";
-};
+&lcdc {
+	status = "okay";
 
-&npm1300_gpio {
-	status = "disabled";
+	jdi_bus: jdi {
+		compatible = "sifli,sf32lb-jdi";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-0 = <&jdi_default>;
+		pinctrl-names = "default";
+
+		ls013b7dh03: ls013b7dh03@0 {
+			compatible = "jdi,parallel";
+			reg = <0>;
+			width = <260>;
+			height = <260>;
+
+			vlcd-gpios = <&gpioa_00_31 9 GPIO_ACTIVE_HIGH>;
+			vddp-gpios = <&gpioa_00_31 0 GPIO_ACTIVE_HIGH>;
+			power-seq-delay-ms = <11>;
+			pwms = <&pwm1 0 PWM_HZ(60) PWM_POLARITY_NORMAL>,
+			       <&pwm1 1 PWM_HZ(60) PWM_POLARITY_INVERTED>;
+			clock-frequency = <746268>;
+			valid-columns = <260>;
+			bank-col-tail = <8>;
+			valid-rows = <260>;
+			bank-row-tail = <4>;
+			enb-start-col = <6>;
+			enb-end-col = <128>;
+		};
+	};
 };
