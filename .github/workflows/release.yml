@@ -50,9 +50,9 @@ jobs:
         with:
           name: firmware-${{ matrix.board }}
           path: |
-            pinetime/build-${{ matrix.board }}/app/zephyr/zephyr.bin
-            pinetime/build-${{ matrix.board }}/app/zephyr/zephyr.elf
-            pinetime/build-${{ matrix.board }}/app/zephyr/zephyr.hex
+            pinetime/build-${{ matrix.board }}/zephyr/zephyr.bin
+            pinetime/build-${{ matrix.board }}/zephyr/zephyr.elf
+            pinetime/build-${{ matrix.board }}/zephyr/zephyr.hex
 
   release:
     needs: build
@@ -74,9 +74,19 @@ jobs:
           mkdir -p release
           TAG="${GITHUB_REF#refs/tags/}"
           for board in pt2 pr2; do
-            cp artifacts/firmware-${board}/zephyr.bin release/pinetime-${TAG}-${board}.bin
-            cp artifacts/firmware-${board}/zephyr.elf release/pinetime-${TAG}-${board}.elf
-            cp artifacts/firmware-${board}/zephyr.hex release/pinetime-${TAG}-${board}.hex
+            # Find the binary files in the downloaded artifact
+            # download-artifact preserves the upload directory structure
+            bin_file=$(find artifacts/firmware-${board} -name "zephyr.bin" | head -1)
+            elf_file=$(find artifacts/firmware-${board} -name "zephyr.elf" | head -1)
+            hex_file=$(find artifacts/firmware-${board} -name "zephyr.hex" | head -1)
+            if [ -n "$bin_file" ]; then
+              cp "$bin_file" release/pinetime-${TAG}-${board}.bin
+              cp "$elf_file" release/pinetime-${TAG}-${board}.elf
+              cp "$hex_file" release/pinetime-${TAG}-${board}.hex
+            else
+              echo "::error::Firmware files not found for ${board}"
+              exit 1
+            fi
           done
 
       - name: Generate release notes
