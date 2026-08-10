@@ -79,6 +79,10 @@
 	};
 };
 
+&gpioa_00_31 {
+	status = "okay";
+};
+
 &lcdc {
 	status = "okay";
 
