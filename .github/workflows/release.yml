@@ -1,0 +1,109 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# GitHub Actions Release CI for PineTime Zephyr firmware
+# Triggers on tag push (v*) and creates a GitHub Release with firmware binaries
+
+name: Release PineTime Firmware
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    strategy:
+      fail-fast: true
+      matrix:
+        board: [pt2, pr2]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: pinetime
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: pinetime
+          toolchains: arm-zephyr-eabi
+
+      - name: Build firmware for ${{ matrix.board }}
+        working-directory: pinetime
+        run: |
+          west build -p -b ${{ matrix.board }} app --build-dir build-${{ matrix.board }}
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.board }}
+          path: |
+            pinetime/build-${{ matrix.board }}/app/zephyr/zephyr.bin
+            pinetime/build-${{ matrix.board }}/app/zephyr/zephyr.elf
+            pinetime/build-${{ matrix.board }}/app/zephyr/zephyr.hex
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          TAG="${GITHUB_REF#refs/tags/}"
+          for board in pt2 pr2; do
+            cp artifacts/firmware-${board}/zephyr.bin release/pinetime-${TAG}-${board}.bin
+            cp artifacts/firmware-${board}/zephyr.elf release/pinetime-${TAG}-${board}.elf
+            cp artifacts/firmware-${board}/zephyr.hex release/pinetime-${TAG}-${board}.hex
+          done
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            echo "body=Initial release ${TAG}" >> "$GITHUB_OUTPUT"
+          else
+            NOTES=$(git log --pretty=format:"- %s (%h)" "${PREV_TAG}..HEAD" --)
+            {
+              echo "body<<EOF"
+              echo "## Changes since ${PREV_TAG}"
+              echo ""
+              echo "$NOTES"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: PineTime ${{ github.ref_name }}
+          body: ${{ steps.notes.outputs.body }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+          files: release/*
